@@ -1,0 +1,10 @@
+# Pagination
+MIN_PAGE = 1
+MIN_PAGE_SIZE = 1
+DEFAULT_PAGE = 1
+DEFAULT_PAGE_SIZE = 20
+MAX_PAGE_SIZE = 100
+
+# Request headers
+HEADER_REQUEST_ID = "X-Request-ID"
+HEADER_PROCESS_TIME = "X-Process-Time"
