@@ -2,7 +2,7 @@ import atexit
 import logging
 from collections.abc import Awaitable, Callable
 from functools import wraps
-from typing import ParamSpec, TypeVar
+from typing import ParamSpec, TypeVar, cast
 from urllib.parse import urlparse, urlunparse
 
 from fastapi import FastAPI
@@ -80,7 +80,7 @@ def traced(name: str) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Await
 
 def _shutdown() -> None:
     if _configured:
-        trace.get_tracer_provider().shutdown()
+        cast(TracerProvider, trace.get_tracer_provider()).shutdown()
 
 
 atexit.register(_shutdown)

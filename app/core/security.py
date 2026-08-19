@@ -1,5 +1,5 @@
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, cast
 
 import bcrypt
 from jose import jwt
@@ -28,7 +28,7 @@ def _create_token(subject: str, token_type: str, expires_delta: timedelta) -> st
         "exp": now + expires_delta,
         "type": token_type,
     }
-    return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
+    return cast(str, jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm))
 
 
 def create_access_token(subject: str) -> str:
@@ -41,4 +41,7 @@ def create_refresh_token(subject: str) -> str:
 
 def decode_token(token: str) -> dict[str, Any]:
     """Decode a token. Raises ``jose.JWTError`` if invalid or expired."""
-    return jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+    return cast(
+        dict[str, Any],
+        jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm]),
+    )
