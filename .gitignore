@@ -1,0 +1,24 @@
+#python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+
+#env / secrets
+.env
+
+#logs
+logs/
+*.logs
+
+# test / coverage
+.coverage
+.pytest_cache/
+htmlcov/
+.ruff_cache/
+.mypy_cache/
+
+#IDE
+.idea/
+.vscode/
+
