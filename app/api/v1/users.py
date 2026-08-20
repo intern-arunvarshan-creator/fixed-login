@@ -37,6 +37,7 @@ from app.schemas.user import (
 from app.services import user_service
 from app.utils.pagination import total_pages
 
+
 router = APIRouter(tags=["Users"])
 
 

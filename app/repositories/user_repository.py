@@ -36,7 +36,9 @@ async def list_users(
     result = await db.execute(
         select(User)
         .where(*filters)
-        .order_by(col(User.created_at))
+        .order_by(
+    col(User.updated_at).desc(),
+    col(User.id).desc(),)
         .offset((page - 1) * limit)
         .limit(limit)
     )
