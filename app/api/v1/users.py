@@ -13,7 +13,13 @@ from app.core.constants import (
     MIN_PAGE_SIZE,
 )
 from app.database.database import get_db
-from app.models.enums import AuditAction, AuditResourceType, UserStatus
+from app.models.enums import (
+    AuditAction,
+    AuditResourceType,
+    UserStatus,
+    UserStatusFilter,
+    resolve_filter,
+)
 from app.models.platform_admin import PlatformAdmin
 from app.models.user import User
 from app.schemas.common import ApiResponse, Pagination
@@ -47,6 +53,7 @@ async def create_user(
     db: AsyncSession = Depends(get_db),
     _admin: PlatformAdmin = Depends(get_current_admin),
 ) -> ApiResponse[UserRead]:
+    """Create a new user with a name, email, and password."""
     user = await user_service.create_user(db, data)
     await record_audit(
         db,
@@ -64,13 +71,15 @@ async def create_user(
 async def list_users(
     page: int = Query(DEFAULT_PAGE, ge=MIN_PAGE),
     limit: int = Query(DEFAULT_PAGE_SIZE, ge=MIN_PAGE_SIZE, le=MAX_PAGE_SIZE),
-    search: str | None = Query(None),
-    status: UserStatus | None = Query(None),
+    search: str | None = Query(None, description="Search by name or email"),
+    status: UserStatusFilter = Query(UserStatusFilter.ALL, description="Filter by user status"),
     db: AsyncSession = Depends(get_db),
     _admin: PlatformAdmin = Depends(get_current_admin),
 ) -> ApiResponse[UserListData]:
+    """List users, paginated and optionally filtered by search text or status."""
+    status_value = resolve_filter(status, UserStatus)
     users, total = await user_service.list_users(
-        db, page=page, limit=limit, search=search, status=status
+        db, page=page, limit=limit, search=search, status=status_value
     )
     body = _to_user_list_data(users, page, limit, total)
     return ApiResponse(code=CODE_LISTED, message=MSG_LISTED, data=body)
@@ -82,6 +91,7 @@ async def get_user(
     db: AsyncSession = Depends(get_db),
     _admin: PlatformAdmin = Depends(get_current_admin),
 ) -> ApiResponse[UserRead]:
+    """Fetch a single user by id."""
     user = await user_service.get_user(db, user_id)
     return ApiResponse(code=CODE_FETCHED, message=MSG_FETCHED, data=user)
 
@@ -94,6 +104,7 @@ async def replace_user(
     db: AsyncSession = Depends(get_db),
     _admin: PlatformAdmin = Depends(get_current_admin),
 ) -> ApiResponse[UserRead]:
+    """Replace a user's name, email, and password; status is left unchanged."""
     user = await user_service.replace_user(db, user_id, data)
     await record_audit(
         db,
@@ -115,6 +126,7 @@ async def update_user(
     db: AsyncSession = Depends(get_db),
     _admin: PlatformAdmin = Depends(get_current_admin),
 ) -> ApiResponse[UserRead]:
+    """Partially update a user's name, email, or status."""
     user = await user_service.update_user(db, user_id, data)
     await record_audit(
         db,
@@ -135,6 +147,7 @@ async def delete_user(
     db: AsyncSession = Depends(get_db),
     _admin: PlatformAdmin = Depends(get_current_admin),
 ) -> ApiResponse[None]:
+    """Delete a user by id."""
     await user_service.delete_user(db, user_id)
     await record_audit(
         db,

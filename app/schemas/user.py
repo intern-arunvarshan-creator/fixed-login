@@ -1,14 +1,47 @@
 import re
 import uuid
 from datetime import datetime
+from functools import partial
+from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import AfterValidator, BaseModel, ConfigDict, EmailStr, Field
 
 from app.models.enums import UserStatus
 from app.schemas.common import Pagination
+from app.utils.validate import validate_slug_format
 
 PASSWORD_PATTERN = re.compile(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$")
 PASSWORD_MIN_LENGTH = 8
+CREDENTIAL_STRENGTH_RULES = (
+    "Password must be at least 8 characters and include an uppercase letter, a "
+    "lowercase letter, a number, and a special character"
+)
+PASSWORD_EXAMPLE = (
+    r'z8VkP9_3mXq~\h$M((G mTN|fBCSvH*xi<q$V~Iy2D"U(eG#C":CG),Ri>G[A\bTIT5ZAYpRFE;cHdY1'  # noqa: S105  # nosec B105  (example password shown in OpenAPI docs, not a real secret)
+)
+
+
+def validate_password_strength(value: str) -> str:
+    if not PASSWORD_PATTERN.fullmatch(value):
+        raise ValueError(CREDENTIAL_STRENGTH_RULES)
+    return value
+
+
+NameStr = Annotated[
+    str,
+    Field(min_length=1, max_length=255, examples=["john-doe"]),
+    AfterValidator(partial(validate_slug_format, field_label="Name")),
+]
+
+PasswordStr = Annotated[
+    str,
+    Field(
+        min_length=PASSWORD_MIN_LENGTH,
+        examples=[PASSWORD_EXAMPLE],
+        description=CREDENTIAL_STRENGTH_RULES,
+    ),
+    AfterValidator(validate_password_strength),
+]
 
 CODE_CREATED = "S_201_USR_CREATED"
 MSG_CREATED = "User created successfully"
@@ -23,16 +56,16 @@ MSG_DELETED = "User deleted successfully"
 
 
 class UserCreate(BaseModel):
-    name: str = Field(min_length=1, max_length=255)
+    name: NameStr
     email: EmailStr
-    password: str = Field(min_length=PASSWORD_MIN_LENGTH, pattern=PASSWORD_PATTERN)
+    password: PasswordStr
     status: UserStatus = UserStatus.ACTIVE
 
 
 class UserUpdate(BaseModel):
     """Partial update (PATCH) — only provided fields are applied."""
 
-    name: str | None = Field(default=None, min_length=1, max_length=255)
+    name: NameStr | None = None
     email: EmailStr | None = None
     status: UserStatus | None = None
 
@@ -40,9 +73,9 @@ class UserUpdate(BaseModel):
 class UserReplace(BaseModel):
     """Full replace (PUT) — name/email/password required; status unchanged."""
 
-    name: str = Field(min_length=1, max_length=255)
+    name: NameStr
     email: EmailStr
-    password: str = Field(min_length=PASSWORD_MIN_LENGTH, pattern=PASSWORD_PATTERN)
+    password: PasswordStr
 
 
 class UserRead(BaseModel):

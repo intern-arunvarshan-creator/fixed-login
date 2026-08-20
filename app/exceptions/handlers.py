@@ -16,6 +16,9 @@ from app.exceptions.errors import (
 
 logger = logging.getLogger("app.exceptions")
 
+# Pydantic prefixes messages from AfterValidator (ValueError) with this.
+PYDANTIC_VALUE_ERROR_PREFIX = "Value error, "
+
 
 def _envelope(code: str, message: str, data: Any = None, status_code: int = 200) -> JSONResponse:
     return JSONResponse(
@@ -37,7 +40,8 @@ def register_exception_handlers(app: FastAPI) -> None:
         for err in exc.errors():
             loc = [str(part) for part in err.get("loc", []) if part != "body"]
             field = ".".join(loc) or "body"
-            errors.append((field, err.get("msg", "")))
+            issue = err.get("msg", "").removeprefix(PYDANTIC_VALUE_ERROR_PREFIX)
+            errors.append((field, issue))
         error = validation_failed(errors)
         return _envelope(error.code, error.message, error.data, error.status_code)
 

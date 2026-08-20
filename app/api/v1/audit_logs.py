@@ -11,7 +11,13 @@ from app.core.constants import (
 )
 from app.database.database import get_db
 from app.models.audit_log import AuditLog
-from app.models.enums import AuditAction, AuditResourceType
+from app.models.enums import (
+    AuditAction,
+    AuditActionFilter,
+    AuditResourceType,
+    AuditResourceTypeFilter,
+    resolve_filter,
+)
 from app.models.platform_admin import PlatformAdmin
 from app.schemas.audit import CODE_LISTED, MSG_LISTED, AuditLogListData, AuditLogRead
 from app.schemas.common import ApiResponse, Pagination
@@ -25,14 +31,24 @@ router = APIRouter(tags=["Audit"])
 async def list_audit_logs(
     page: int = Query(DEFAULT_PAGE, ge=MIN_PAGE),
     limit: int = Query(DEFAULT_PAGE_SIZE, ge=MIN_PAGE_SIZE, le=MAX_PAGE_SIZE),
-    actor: str | None = Query(None),
-    action: AuditAction | None = Query(None),
-    resource_type: AuditResourceType | None = Query(None),
+    actor: str | None = Query(None, description="Filter by actor (username)"),
+    action: AuditActionFilter = Query(AuditActionFilter.ALL, description="Filter by audit action"),
+    resource_type: AuditResourceTypeFilter = Query(
+        AuditResourceTypeFilter.ALL, description="Filter by resource type"
+    ),
     db: AsyncSession = Depends(get_db),
     _admin: PlatformAdmin = Depends(get_current_admin),
 ) -> ApiResponse[AuditLogListData]:
+    """List audit log entries, paginated and filterable by actor, action, or resource type."""
+    action_value = resolve_filter(action, AuditAction)
+    resource_type_value = resolve_filter(resource_type, AuditResourceType)
     entries, total = await audit_service.list_audit_logs(
-        db, page=page, limit=limit, actor=actor, action=action, resource_type=resource_type
+        db,
+        page=page,
+        limit=limit,
+        actor=actor,
+        action=action_value,
+        resource_type=resource_type_value,
     )
     body = _to_audit_log_list_data(entries, page, limit, total)
     return ApiResponse(code=CODE_LISTED, message=MSG_LISTED, data=body)

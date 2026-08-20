@@ -28,6 +28,7 @@ async def login(
     request: Request,
     db: AsyncSession = Depends(get_db),
 ) -> ApiResponse[TokenResponse]:
+    """Authenticate a platform admin and return access and refresh tokens."""
     try:
         token = await auth_service.login(db, credentials)
     except ApiError:
@@ -46,6 +47,7 @@ async def refresh(
     payload: RefreshRequest,
     db: AsyncSession = Depends(get_db),
 ) -> ApiResponse[TokenResponse]:
+    """Exchange a valid refresh token for a new access and refresh token pair."""
     token = await auth_service.refresh(db, payload)
     return ApiResponse(code=CODE_REFRESH_OK, message=MSG_REFRESH_OK, data=token)
 

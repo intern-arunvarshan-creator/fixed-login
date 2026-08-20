@@ -16,6 +16,7 @@ router = APIRouter(tags=["Health"])
     summary="Check service and database health",
 )
 async def health_check(db: AsyncSession = Depends(get_db)) -> ApiResponse[dict[str, str]]:
+    """Report whether the service and its database connection are up."""
     try:
         await db.execute(text("SELECT 1"))
     except SQLAlchemyError:
