@@ -1,16 +1,12 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime
 
 from sqlalchemy import Column, func
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, SQLModel
 
 from app.models.enums import UserStatus, enum_values
-
-
-def _utcnow() -> datetime:
-    """Naive UTC now (matches PostgreSQL ``timestamp without time zone``)."""
-    return datetime.now(UTC).replace(tzinfo=None)
+from app.utils.time import utcnow
 
 
 class User(SQLModel, table=True):
@@ -27,5 +23,5 @@ class User(SQLModel, table=True):
         ),
     )
     hashed_password: str
-    created_at: datetime = Field(default_factory=_utcnow)
-    updated_at: datetime = Field(default_factory=_utcnow, sa_column_kwargs={"onupdate": func.now()})
+    created_at: datetime = Field(default_factory=utcnow)
+    updated_at: datetime = Field(default_factory=utcnow, sa_column_kwargs={"onupdate": func.now()})

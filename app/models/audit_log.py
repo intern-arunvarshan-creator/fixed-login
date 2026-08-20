@@ -1,13 +1,11 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy import JSON, Column
 from sqlmodel import Field, SQLModel
 
-
-def _utcnow() -> datetime:
-    return datetime.now(UTC).replace(tzinfo=None)
+from app.utils.time import utcnow
 
 
 class AuditLog(SQLModel, table=True):
@@ -22,4 +20,4 @@ class AuditLog(SQLModel, table=True):
     request_id: str | None = Field(default=None, max_length=255)
     ip_address: str | None = Field(default=None, max_length=255)
     user_agent: str | None = Field(default=None, max_length=512)
-    created_at: datetime = Field(index=True, default_factory=_utcnow)
+    created_at: datetime = Field(index=True, default_factory=utcnow)

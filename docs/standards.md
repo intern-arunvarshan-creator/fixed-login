@@ -11,7 +11,7 @@ Requests flow one way:
 - **api** (`app/api/`): routing, request parsing, dependency injection, response shaping. No business logic, no SQL.
 - **services** (`app/services/`): business rules. Call repositories. Return model entities.
 - **repositories** (`app/repositories/`): the *only* layer that writes SQLAlchemy/SQLModel queries. One repository per model.
-- **models** (`app/models/`): table definitions. Import *nothing* from `app` except sibling model modules.
+- **models** (`app/models/`): table definitions. Import *nothing* from `app` except sibling model modules and pure, dependency-free helpers from `app/utils/` (e.g. `utcnow`).
 
 Hard rules:
 - The API layer never calls a repository directly — always through a service.
