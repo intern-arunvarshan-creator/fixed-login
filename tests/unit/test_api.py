@@ -49,4 +49,40 @@ def test_audit_logs_requires_token(client) -> None:
 def test_login_validation_error(client) -> None:
     resp = client.post("/api/v1/auth/login", json={"username": "admin"})
     assert resp.status_code == 422
-    assert resp.json()["code"] == "E_422_VALIDATION_FAILED"
+    body = resp.json()
+    assert body["code"] == "E_422_VALIDATION_FAILED"
+    assert body["data"] is None
+
+
+def test_login_rejects_invalid_username_format(client) -> None:
+    resp = client.post(
+        "/api/v1/auth/login", json={"username": "!@#$%admin-qw", "password": "Admin@123"}
+    )
+    assert resp.status_code == 422
+    body = resp.json()
+    assert body["data"] is None
+    assert body["message"] == "Username must follow the valid format"
+
+
+def test_create_user_validation_error_reports_affected_field(client) -> None:
+    from app.api.deps import get_current_admin
+    from app.main import app
+    from app.models.platform_admin import PlatformAdmin
+
+    app.dependency_overrides[get_current_admin] = lambda: PlatformAdmin(
+        username="admin", hashed_password="hash"
+    )
+    try:
+        resp = client.post(
+            "/api/v1/users",
+            json={"name": "Alice Smith", "email": "a@a.com", "password": "S3cureP@ss"},
+        )
+    finally:
+        app.dependency_overrides.pop(get_current_admin, None)
+
+    assert resp.status_code == 422
+    body = resp.json()
+    assert body["message"] == "Validation failed"
+    assert body["data"]["errors"] == [
+        {"field": "name", "issue": "Name must follow the valid format"}
+    ]

@@ -17,6 +17,19 @@ def test_login_request() -> None:
     assert LoginRequest(username="admin", password="pw").username == "admin"
 
 
+def test_login_request_allows_hyphen_in_middle() -> None:
+    assert LoginRequest(username="john-doe", password="pw").username == "john-doe"
+
+
+@pytest.mark.parametrize(
+    "username",
+    ["Admin!@$$", "-admin", "admin-", "ad--min", "ad min", ""],
+)
+def test_login_request_rejects_invalid_username_format(username: str) -> None:
+    with pytest.raises(ValidationError):
+        LoginRequest(username=username, password="pw")
+
+
 def test_token_response_defaults() -> None:
     assert TokenResponse(access_token="a", refresh_token="r").token_type == "bearer"
 
@@ -35,9 +48,35 @@ def test_user_create_rejects_weak_password() -> None:
         UserCreate(name="Alice", email="alice@example.com", password="weak")
 
 
+def test_user_create_rejects_password_missing_complexity() -> None:
+    with pytest.raises(ValidationError) as exc_info:
+        UserCreate(name="Alice", email="alice@example.com", password="weakpassword")
+    assert "must be at least 8 characters" in str(exc_info.value)
+
+
+def test_user_create_password_schema_has_no_raw_regex() -> None:
+    schema = UserCreate.model_json_schema()["properties"]["password"]
+    assert "pattern" not in schema
+    assert "must be at least 8 characters" in schema["description"]
+
+
 def test_user_create_defaults_to_active() -> None:
     user = UserCreate(name="Alice", email="alice@example.com", password="S3cureP@ss")
     assert user.status is UserStatus.ACTIVE
+
+
+def test_user_create_allows_hyphen_in_middle_of_name() -> None:
+    user = UserCreate(name="Alice-Smith", email="alice@example.com", password="S3cureP@ss")
+    assert user.name == "Alice-Smith"
+
+
+@pytest.mark.parametrize(
+    "name",
+    ["Alice!", "-Alice", "Alice-", "Ali--ce", "Alice Smith"],
+)
+def test_user_create_rejects_invalid_name_format(name: str) -> None:
+    with pytest.raises(ValidationError):
+        UserCreate(name=name, email="alice@example.com", password="S3cureP@ss")
 
 
 def test_user_read_from_attributes() -> None:

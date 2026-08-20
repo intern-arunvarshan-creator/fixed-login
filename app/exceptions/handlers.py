@@ -9,9 +9,11 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.exceptions.errors import (
     INTERNAL_ERROR,
+    VALIDATION_FAILED,
     ApiError,
     email_already_registered,
     validation_failed,
+    validation_failed_with_fields,
 )
 
 logger = logging.getLogger("app.exceptions")
@@ -33,12 +35,18 @@ def register_exception_handlers(app: FastAPI) -> None:
     async def validation_error_handler(
         request: Request, exc: RequestValidationError
     ) -> JSONResponse:
-        errors = []
-        for err in exc.errors():
-            loc = [str(part) for part in err.get("loc", []) if part != "body"]
-            field = ".".join(loc) or "body"
-            errors.append((field, err.get("msg", "")))
-        error = validation_failed(errors)
+        if request.url.path.startswith("/api/v1/users"):
+            errors = []
+            for err in exc.errors():
+                loc = [str(part) for part in err.get("loc", []) if part != "body"]
+                field = ".".join(loc) or "body"
+                issue = err.get("msg", "").removeprefix("Value error, ")
+                errors.append((field, issue))
+            error = validation_failed_with_fields(errors)
+        else:
+            messages = [err.get("msg", "").removeprefix("Value error, ") for err in exc.errors()]
+            message = "; ".join(messages) if messages else VALIDATION_FAILED.message
+            error = validation_failed(message)
         return _envelope(error.code, error.message, error.data, error.status_code)
 
     @app.exception_handler(IntegrityError)

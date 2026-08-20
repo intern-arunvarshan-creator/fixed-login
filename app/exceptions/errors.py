@@ -44,7 +44,11 @@ def field_errors(errors: list[tuple[str, str]]) -> dict[str, Any]:
     return {"errors": [{"field": field, "issue": issue} for field, issue in errors]}
 
 
-def validation_failed(errors: list[tuple[str, str]]) -> ApiError:
+def validation_failed(message: str) -> ApiError:
+    return ApiError(VALIDATION_FAILED.status_code, VALIDATION_FAILED.code, message)
+
+
+def validation_failed_with_fields(errors: list[tuple[str, str]]) -> ApiError:
     return _make(VALIDATION_FAILED, field_errors(errors))
 
 
