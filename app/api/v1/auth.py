@@ -5,16 +5,19 @@ from app.api.audit import record_audit
 from app.database import get_db
 from app.exceptions.errors import ApiError
 from app.models.enums import AuditAction, AuditResourceType
-from app.schemas.auth import LoginRequest, RefreshRequest, TokenResponse
+from app.schemas.auth import (
+    CODE_LOGIN_OK,
+    CODE_REFRESH_OK,
+    MSG_LOGIN_OK,
+    MSG_REFRESH_OK,
+    LoginRequest,
+    RefreshRequest,
+    TokenResponse,
+)
 from app.schemas.common import ApiResponse
 from app.services import auth_service
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
-
-CODE_LOGIN_OK = "S_200_AUTH_LOGIN_OK"
-MSG_LOGIN_OK = "Login successful"
-CODE_REFRESH_OK = "S_200_AUTH_REFRESH_OK"
-MSG_REFRESH_OK = "Token refreshed"
 
 
 @router.post(

@@ -17,22 +17,27 @@ from app.models.enums import AuditAction, AuditResourceType, UserStatus
 from app.models.platform_admin import PlatformAdmin
 from app.models.user import User
 from app.schemas.common import ApiResponse, Pagination
-from app.schemas.user import UserCreate, UserListData, UserRead, UserReplace, UserUpdate
+from app.schemas.user import (
+    CODE_CREATED,
+    CODE_DELETED,
+    CODE_FETCHED,
+    CODE_LISTED,
+    CODE_UPDATED,
+    MSG_CREATED,
+    MSG_DELETED,
+    MSG_FETCHED,
+    MSG_LISTED,
+    MSG_UPDATED,
+    UserCreate,
+    UserListData,
+    UserRead,
+    UserReplace,
+    UserUpdate,
+)
 from app.services import user_service
 from app.utils.pagination import total_pages
 
 router = APIRouter(tags=["Users"])
-
-CODE_CREATED = "S_201_USR_CREATED"
-MSG_CREATED = "User created successfully"
-CODE_LISTED = "S_200_USR_LIST_OK"
-MSG_LISTED = "Users fetched successfully"
-CODE_FETCHED = "S_200_USR_FETCH_OK"
-MSG_FETCHED = "User fetched successfully"
-CODE_UPDATED = "S_200_USR_UPDATED"
-MSG_UPDATED = "User updated successfully"
-CODE_DELETED = "S_200_USR_DELETED"
-MSG_DELETED = "User deleted successfully"
 
 
 @router.post("", response_model=ApiResponse[UserRead], status_code=201, summary="Create a user")

@@ -13,15 +13,12 @@ from app.database import get_db
 from app.models.audit_log import AuditLog
 from app.models.enums import AuditAction, AuditResourceType
 from app.models.platform_admin import PlatformAdmin
-from app.schemas.audit import AuditLogListData, AuditLogRead
+from app.schemas.audit import CODE_LISTED, MSG_LISTED, AuditLogListData, AuditLogRead
 from app.schemas.common import ApiResponse, Pagination
 from app.services import audit_service
 from app.utils.pagination import total_pages
 
 router = APIRouter(tags=["Audit"])
-
-CODE_LISTED = "S_200_AUDIT_LIST_OK"
-MSG_LISTED = "Audit logs fetched successfully"
 
 
 @router.get("/audit-logs", response_model=ApiResponse[AuditLogListData], summary="List audit logs")

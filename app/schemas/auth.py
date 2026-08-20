@@ -1,5 +1,10 @@
 from pydantic import BaseModel
 
+CODE_LOGIN_OK = "S_200_AUTH_LOGIN_OK"
+MSG_LOGIN_OK = "Login successful"
+CODE_REFRESH_OK = "S_200_AUTH_REFRESH_OK"
+MSG_REFRESH_OK = "Token refreshed"
+
 
 class LoginRequest(BaseModel):
     username: str

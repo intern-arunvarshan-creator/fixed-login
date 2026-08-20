@@ -6,6 +6,9 @@ from pydantic import BaseModel, ConfigDict
 
 from app.schemas.common import Pagination
 
+CODE_LISTED = "S_200_AUDIT_LIST_OK"
+MSG_LISTED = "Audit logs fetched successfully"
+
 
 class AuditLogRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)

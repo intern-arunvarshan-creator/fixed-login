@@ -57,7 +57,8 @@ platform-admin-v2/
 │   │   ├── common.py           # ApiResponse envelope + Pagination
 │   │   ├── auth.py             # auth DTOs
 │   │   ├── user.py             # user DTOs + password policy
-│   │   └── audit.py            # audit DTOs
+│   │   ├── audit.py            # audit DTOs
+│   │   └── health.py           # health result codes/messages
 │   ├── services/
 │   │   ├── auth_service.py     # login business logic
 │   │   ├── user_service.py     # user business rules

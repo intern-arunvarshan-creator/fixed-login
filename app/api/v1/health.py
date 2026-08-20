@@ -5,13 +5,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.schemas.common import ApiResponse
+from app.schemas.health import CODE_DOWN, CODE_OK, MSG_DOWN, MSG_OK
 
 router = APIRouter(tags=["Health"])
-
-CODE_OK = "S_200_HEALTH_OK"
-MSG_OK = "Service is healthy"
-CODE_DOWN = "E_503_HEALTH_DOWN"
-MSG_DOWN = "Service is unhealthy"
 
 
 @router.get(
