@@ -4,7 +4,7 @@ from jose import JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import decode_token
-from app.database import get_db
+from app.database.database import get_db
 from app.exceptions.errors import not_authenticated
 from app.models.platform_admin import PlatformAdmin
 

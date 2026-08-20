@@ -11,7 +11,7 @@ from sqlalchemy import select
 from sqlmodel import col
 
 from app.core.security import hash_password
-from app.database import async_session_factory
+from app.database.database import async_session_factory
 from app.models.platform_admin import PlatformAdmin
 
 

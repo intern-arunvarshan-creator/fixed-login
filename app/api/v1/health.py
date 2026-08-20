@@ -3,7 +3,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
+from app.database.database import get_db
 from app.schemas.common import ApiResponse
 from app.schemas.health import CODE_DOWN, CODE_OK, MSG_DOWN, MSG_OK
 

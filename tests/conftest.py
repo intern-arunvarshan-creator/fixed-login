@@ -15,7 +15,7 @@ os.environ.setdefault("SECRET_KEY", "test-secret-key-for-unit-tests")
 def client():
     from fastapi.testclient import TestClient
 
-    from app.database import get_db
+    from app.database.database import get_db
     from app.main import app
 
     db = MagicMock()

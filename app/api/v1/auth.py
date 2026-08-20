@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.audit import record_audit
-from app.database import get_db
+from app.database.database import get_db
 from app.exceptions.errors import ApiError
 from app.models.enums import AuditAction, AuditResourceType
 from app.schemas.auth import (

@@ -1,4 +1,4 @@
-"""Repository layer tests (mocked async session)."""
+"""User repository tests (mocked async session)."""
 
 import asyncio
 import uuid
@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 from app.models.enums import UserStatus
 from app.models.user import User
-from app.repositories import audit_repository, auth_repository, user_repository
+from app.repositories import user_repository
 
 
 def _user() -> User:
@@ -55,32 +55,3 @@ def test_list_users_with_filters() -> None:
     )
     assert users == []
     assert total == 1
-
-
-def test_get_admin_by_username() -> None:
-    db = MagicMock()
-    db.execute = AsyncMock(return_value=MagicMock())
-    db.execute.return_value.scalar_one_or_none.return_value = "admin-object"
-    assert asyncio.run(auth_repository.get_admin_by_username(db, "admin")) == "admin-object"
-
-
-def test_create_audit_log_commits_and_refreshes() -> None:
-    db = MagicMock()
-    db.add = MagicMock()
-    db.commit = AsyncMock()
-    db.refresh = AsyncMock()
-    entry = asyncio.run(audit_repository.create_audit_log(db, actor="admin", action="user.create"))
-    assert entry.action == "user.create"
-    db.add.assert_called_once()
-    db.commit.assert_awaited_once()
-    db.refresh.assert_awaited_once()
-
-
-def test_list_audit_logs_empty() -> None:
-    db = MagicMock()
-    db.scalar = AsyncMock(return_value=0)
-    db.execute = AsyncMock(return_value=MagicMock())
-    db.execute.return_value.scalars.return_value.all.return_value = []
-    entries, total = asyncio.run(audit_repository.list_audit_logs(db, page=1, limit=20))
-    assert entries == []
-    assert total == 0

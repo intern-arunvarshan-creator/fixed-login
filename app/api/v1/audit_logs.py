@@ -9,7 +9,7 @@ from app.core.constants import (
     MIN_PAGE,
     MIN_PAGE_SIZE,
 )
-from app.database import get_db
+from app.database.database import get_db
 from app.models.audit_log import AuditLog
 from app.models.enums import AuditAction, AuditResourceType
 from app.models.platform_admin import PlatformAdmin
