@@ -1,6 +1,5 @@
 """Auth dependency tests."""
 
-import asyncio
 from unittest.mock import AsyncMock
 
 import pytest
@@ -12,17 +11,17 @@ from app.exceptions.errors import ApiError
 from app.models.platform_admin import PlatformAdmin
 
 
-def test_get_current_admin_returns_admin() -> None:
+async def test_get_current_admin_returns_admin() -> None:
     token = create_access_token("admin")
     credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
     db = AsyncMock()
     db.get = AsyncMock(return_value=PlatformAdmin(username="admin", hashed_password="hash"))
 
-    admin = asyncio.run(get_current_admin(credentials, db))
+    admin = await get_current_admin(credentials, db)
     assert admin.username == "admin"
 
 
-def test_get_current_admin_missing_credentials() -> None:
+async def test_get_current_admin_missing_credentials() -> None:
     db = AsyncMock()
     with pytest.raises(ApiError):
-        asyncio.run(get_current_admin(None, db))
+        await get_current_admin(None, db)

@@ -1,6 +1,5 @@
 """Auth service tests (repositories mocked)."""
 
-import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -11,7 +10,7 @@ from app.schemas.auth import LoginRequest, RefreshRequest
 from app.services import auth_service
 
 
-def test_login_success() -> None:
+async def test_login_success() -> None:
     admin = PlatformAdmin(username="admin", hashed_password="hash")
     with (
         patch.object(
@@ -23,26 +22,22 @@ def test_login_success() -> None:
         patch.object(auth_service, "create_access_token", return_value="access"),
         patch.object(auth_service, "create_refresh_token", return_value="refresh"),
     ):
-        token = asyncio.run(
-            auth_service.login(MagicMock(), LoginRequest(username="admin", password="pw"))
-        )
+        token = await auth_service.login(MagicMock(), LoginRequest(username="admin", password="pw"))
     assert token.access_token == "access"
     assert token.refresh_token == "refresh"
 
 
-def test_login_invalid_credentials() -> None:
+async def test_login_invalid_credentials() -> None:
     with patch.object(
         auth_service.auth_repository,
         "get_admin_by_username",
         new=AsyncMock(return_value=None),
     ):
         with pytest.raises(ApiError):
-            asyncio.run(
-                auth_service.login(MagicMock(), LoginRequest(username="nope", password="pw"))
-            )
+            await auth_service.login(MagicMock(), LoginRequest(username="nope", password="pw"))
 
 
-def test_refresh_success() -> None:
+async def test_refresh_success() -> None:
     admin = PlatformAdmin(username="admin", hashed_password="hash")
     with (
         patch.object(
@@ -56,6 +51,6 @@ def test_refresh_success() -> None:
         patch.object(auth_service, "create_access_token", return_value="access"),
         patch.object(auth_service, "create_refresh_token", return_value="refresh"),
     ):
-        token = asyncio.run(auth_service.refresh(MagicMock(), RefreshRequest(refresh_token="r")))
+        token = await auth_service.refresh(MagicMock(), RefreshRequest(refresh_token="r"))
     assert token.access_token == "access"
     assert token.refresh_token == "refresh"
