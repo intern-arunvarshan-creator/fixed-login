@@ -25,16 +25,33 @@ def enum_values(enum_cls: type[Enum]) -> list[str]:
     return [str(member.value) for member in enum_cls]
 
 
-def _filter_enum(name: str, base: type[Enum]) -> type[StrEnum]:
-    """Build a StrEnum with an extra ALL member, for use as a list-endpoint filter default.
-
-    Kept separate from the base enum so "All" never leaks into persisted data
-    (e.g. a real user's status, or a recorded audit action).
-    """
-    members = {"ALL": "All", **{member.name: member.value for member in base}}
-    return StrEnum(name, members)
+# List-endpoint filter enums: each mirrors a base enum plus an ALL sentinel.
+# Kept separate from the base enum so "All" never leaks into persisted data
+# (e.g. a real user's status, or a recorded audit action).
 
 
-UserStatusFilter = _filter_enum("UserStatusFilter", UserStatus)
-AuditActionFilter = _filter_enum("AuditActionFilter", AuditAction)
-AuditResourceTypeFilter = _filter_enum("AuditResourceTypeFilter", AuditResourceType)
+class UserStatusFilter(StrEnum):
+    ALL = "All"
+    ACTIVE = UserStatus.ACTIVE.value
+    INACTIVE = UserStatus.INACTIVE.value
+
+
+class AuditActionFilter(StrEnum):
+    ALL = "All"
+    LOGIN_SUCCESS = AuditAction.LOGIN_SUCCESS.value
+    LOGIN_FAILURE = AuditAction.LOGIN_FAILURE.value
+    USER_CREATE = AuditAction.USER_CREATE.value
+    USER_UPDATE = AuditAction.USER_UPDATE.value
+    USER_REPLACE = AuditAction.USER_REPLACE.value
+    USER_DELETE = AuditAction.USER_DELETE.value
+
+
+class AuditResourceTypeFilter(StrEnum):
+    ALL = "All"
+    AUTH = AuditResourceType.AUTH.value
+    USER = AuditResourceType.USER.value
+
+
+def resolve_filter[T: StrEnum](value: StrEnum, base: type[T]) -> T | None:
+    """Map a filter member to its base-enum member, or None for the ALL sentinel."""
+    return None if value.name == "ALL" else base(value.value)

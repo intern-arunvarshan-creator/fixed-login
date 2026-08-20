@@ -13,7 +13,13 @@ from app.core.constants import (
     MIN_PAGE_SIZE,
 )
 from app.database import get_db
-from app.models.enums import AuditAction, AuditResourceType, UserStatus, UserStatusFilter
+from app.models.enums import (
+    AuditAction,
+    AuditResourceType,
+    UserStatus,
+    UserStatusFilter,
+    resolve_filter,
+)
 from app.models.platform_admin import PlatformAdmin
 from app.models.user import User
 from app.schemas.common import ApiResponse, Pagination
@@ -36,7 +42,6 @@ from app.schemas.user import (
 )
 from app.services import user_service
 from app.utils.pagination import total_pages
-
 
 router = APIRouter(tags=["Users"])
 
@@ -72,7 +77,7 @@ async def list_users(
     _admin: PlatformAdmin = Depends(get_current_admin),
 ) -> ApiResponse[UserListData]:
     """List users, paginated and optionally filtered by search text or status."""
-    status_value = None if status == UserStatusFilter.ALL else UserStatus(status.value)
+    status_value = resolve_filter(status, UserStatus)
     users, total = await user_service.list_users(
         db, page=page, limit=limit, search=search, status=status_value
     )

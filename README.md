@@ -64,7 +64,8 @@ platform-admin-v2/
 │   │   ├── user_service.py     # user business rules
 │   │   └── audit_service.py    # audit recording (best-effort)
 │   └── utils/
-│       └── pagination.py       # total_pages helper
+│       ├── pagination.py       # total_pages helper
+│       └── validate.py         # shared request-field format validators
 ├── docs/
 │   ├── standards.md            # the coding rules
 │   ├── api.md                  # API reference

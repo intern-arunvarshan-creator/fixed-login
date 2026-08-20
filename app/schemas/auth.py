@@ -3,7 +3,7 @@ from typing import Annotated
 
 from pydantic import AfterValidator, BaseModel
 
-from app.utils.validate import validate_username_format
+from app.utils.validate import validate_slug_format
 
 CODE_LOGIN_OK = "S_200_AUTH_LOGIN_OK"
 MSG_LOGIN_OK = "Login successful"
@@ -12,9 +12,7 @@ MSG_REFRESH_OK = "Token refreshed"
 
 
 class LoginRequest(BaseModel):
-    username: Annotated[
-        str, AfterValidator(partial(validate_username_format, field_label="Username"))
-    ]
+    username: Annotated[str, AfterValidator(partial(validate_slug_format, field_label="Username"))]
     password: str
 
 

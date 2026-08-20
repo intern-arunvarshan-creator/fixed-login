@@ -51,7 +51,8 @@ def test_login_validation_error(client) -> None:
     assert resp.status_code == 422
     body = resp.json()
     assert body["code"] == "E_422_VALIDATION_FAILED"
-    assert body["data"] is None
+    assert body["message"] == "Validation failed"
+    assert body["data"]["errors"] == [{"field": "password", "issue": "Field required"}]
 
 
 def test_login_rejects_invalid_username_format(client) -> None:
@@ -60,8 +61,10 @@ def test_login_rejects_invalid_username_format(client) -> None:
     )
     assert resp.status_code == 422
     body = resp.json()
-    assert body["data"] is None
-    assert body["message"] == "Username must follow the valid format"
+    assert body["message"] == "Validation failed"
+    assert body["data"]["errors"] == [
+        {"field": "username", "issue": "Username must follow the valid format"}
+    ]
 
 
 def test_create_user_validation_error_reports_affected_field(client) -> None:

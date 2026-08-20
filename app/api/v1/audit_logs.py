@@ -16,6 +16,7 @@ from app.models.enums import (
     AuditActionFilter,
     AuditResourceType,
     AuditResourceTypeFilter,
+    resolve_filter,
 )
 from app.models.platform_admin import PlatformAdmin
 from app.schemas.audit import CODE_LISTED, MSG_LISTED, AuditLogListData, AuditLogRead
@@ -39,12 +40,8 @@ async def list_audit_logs(
     _admin: PlatformAdmin = Depends(get_current_admin),
 ) -> ApiResponse[AuditLogListData]:
     """List audit log entries, paginated and filterable by actor, action, or resource type."""
-    action_value = None if action == AuditActionFilter.ALL else AuditAction(action.value)
-    resource_type_value = (
-        None
-        if resource_type == AuditResourceTypeFilter.ALL
-        else AuditResourceType(resource_type.value)
-    )
+    action_value = resolve_filter(action, AuditAction)
+    resource_type_value = resolve_filter(resource_type, AuditResourceType)
     entries, total = await audit_service.list_audit_logs(
         db,
         page=page,
