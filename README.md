@@ -84,3 +84,37 @@ See `docs/api.md` for the full walkthrough. Quick start:
 uv sync
 uv run python -m alembic upgrade head
 uv run app
+
+## Checks before committing
+
+Run all of these from `platform-admin-v2/` before you commit. CI runs the same checks on every push/PR.
+
+```bash
+# 1. Format (rewrites files to match the style)
+uv run ruff format .
+
+# 2. Lint (--fix repairs what it can)
+uv run ruff check --fix .
+
+# 3. Type check
+uv run mypy app
+
+# 4. Security scan
+uv run bandit -c pyproject.toml -r app
+
+# 5. Tests
+uv run pytest
+```
+
+All five must pass before you commit. To verify *without* rewriting files, CI uses the check-only forms:
+
+```bash
+uv run ruff format --check .
+uv run ruff check .
+```
+
+Your git hooks already run ruff on `git commit`. If you haven't installed them yet, do it once:
+
+```bash
+uv run pre-commit install
+```

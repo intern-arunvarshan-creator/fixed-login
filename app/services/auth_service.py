@@ -7,11 +7,13 @@ from app.core.security import (
     decode_token,
     verify_password,
 )
+from app.core.tracing import traced
 from app.exceptions.errors import invalid_credentials, not_authenticated
 from app.repositories import auth_repository
 from app.schemas.auth import LoginRequest, RefreshRequest, TokenResponse
 
 
+@traced("auth_service.login")
 async def login(db: AsyncSession, credentials: LoginRequest) -> TokenResponse:
     admin = await auth_repository.get_admin_by_username(db, credentials.username)
     if admin is None or not verify_password(credentials.password, admin.hashed_password):

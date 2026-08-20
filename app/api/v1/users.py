@@ -1,8 +1,9 @@
 import uuid
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.audit import record_audit
 from app.api.deps import get_current_admin
 from app.core.constants import (
     DEFAULT_PAGE,
@@ -17,7 +18,7 @@ from app.models.platform_admin import PlatformAdmin
 from app.models.user import User
 from app.schemas.common import ApiResponse, Pagination
 from app.schemas.user import UserCreate, UserListData, UserRead, UserReplace, UserUpdate
-from app.services import user_service
+from app.services import audit_service, user_service
 from app.utils.pagination import total_pages
 
 router = APIRouter(tags=["Users"])
@@ -37,10 +38,20 @@ MSG_DELETED = "User deleted successfully"
 @router.post("", response_model=ApiResponse[UserRead], status_code=201, summary="Create a user")
 async def create_user(
     data: UserCreate,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     _admin: PlatformAdmin = Depends(get_current_admin),
 ) -> ApiResponse[UserRead]:
     user = await user_service.create_user(db, data)
+    await record_audit(
+        db,
+        request,
+        actor=_admin.username,
+        action=audit_service.ACTION_USER_CREATE,
+        resource_type=audit_service.RESOURCE_USER,
+        resource_id=str(user.id),
+        details={"email": user.email, "name": user.name},
+    )
     return ApiResponse(code=CODE_CREATED, message=MSG_CREATED, data=user)
 
 
@@ -74,10 +85,20 @@ async def get_user(
 async def replace_user(
     user_id: uuid.UUID,
     data: UserReplace,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     _admin: PlatformAdmin = Depends(get_current_admin),
 ) -> ApiResponse[UserRead]:
     user = await user_service.replace_user(db, user_id, data)
+    await record_audit(
+        db,
+        request,
+        actor=_admin.username,
+        action=audit_service.ACTION_USER_REPLACE,
+        resource_type=audit_service.RESOURCE_USER,
+        resource_id=str(user.id),
+        details={"email": user.email},
+    )
     return ApiResponse(code=CODE_UPDATED, message=MSG_UPDATED, data=user)
 
 
@@ -85,20 +106,39 @@ async def replace_user(
 async def update_user(
     user_id: uuid.UUID,
     data: UserUpdate,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     _admin: PlatformAdmin = Depends(get_current_admin),
 ) -> ApiResponse[UserRead]:
     user = await user_service.update_user(db, user_id, data)
+    await record_audit(
+        db,
+        request,
+        actor=_admin.username,
+        action=audit_service.ACTION_USER_UPDATE,
+        resource_type=audit_service.RESOURCE_USER,
+        resource_id=str(user.id),
+        details={"changed_fields": sorted(data.model_dump(exclude_unset=True).keys())},
+    )
     return ApiResponse(code=CODE_UPDATED, message=MSG_UPDATED, data=user)
 
 
 @router.delete("/{user_id}", response_model=ApiResponse[None], summary="Delete a user")
 async def delete_user(
     user_id: uuid.UUID,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     _admin: PlatformAdmin = Depends(get_current_admin),
 ) -> ApiResponse[None]:
     await user_service.delete_user(db, user_id)
+    await record_audit(
+        db,
+        request,
+        actor=_admin.username,
+        action=audit_service.ACTION_USER_DELETE,
+        resource_type=audit_service.RESOURCE_USER,
+        resource_id=str(user_id),
+    )
     return ApiResponse(code=CODE_DELETED, message=MSG_DELETED, data=None)
 
 
