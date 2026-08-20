@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     log_to_console: bool = True
     log_to_file: bool = True
-    log_file: str = "logs/platform-admin-v2.log"
+    log_file: str = "logs/app_logs/platform-admin-v2.log"
     log_file_max_bytes: int = 10_000_000
     log_file_backup_count: int = 5
 
@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     tracing_service_name: str = "platform-admin-v2"
     tracing_otlp_endpoint: str | None = None
     tracing_sample_rate: float = 1.0
+    tracing_log_to_file: bool = True
+    tracing_log_file: str = "logs/trace_logs/traces.log"
+    tracing_log_to_console: bool = False
 
     # Auth
     secret_key: str

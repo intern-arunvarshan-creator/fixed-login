@@ -2,6 +2,55 @@
 
 FastAPI backend where **Platform Admins** log in and manage platform **Users**, with an append-only audit log.
 
+## Architecture
+
+Requests flow one way, through four layers (rule 1). Each layer only talks to the one below it:
+
+```text
+HTTP request
+   │
+   ▼
+api/          parse the request, check auth, call ONE service, shape the response
+   │
+   ▼
+services/     business rules (validation, uniqueness, password hashing, tokens)
+   │
+   ▼
+repositories/ the ONLY layer that writes SQL — one repository per model
+   │
+   ▼
+models/       SQLModel tables (User, PlatformAdmin, AuditLog) + enums
+```
+
+Supporting modules around that core:
+
+- **schemas/** — Pydantic DTOs. Requests/responses are always DTOs; a table model never crosses the API boundary.
+- **core/** — config, security (bcrypt + JWT), constants, structured logging, tracing.
+- **exceptions/** — typed `ApiError`s + handlers that turn them into the response envelope.
+- **middleware/** — sets a `request_id` per request, logs one access line, adds `X-Process-Time`.
+- **utils/** — shared pure helpers.
+
+### Example: creating a user
+
+```text
+POST /api/v1/users  {"name", "email", "password", "status"}
+        │
+        ▼
+api/v1/users.py        parse body → UserCreate DTO · verify admin token (deps.py)
+        │  await user_service.create_user(db, data)
+        ▼
+services/user_service  email already taken? → raise · hash password (core/security)
+        │  await user_repository.create_user(db, user)
+        ▼
+repositories/user      db.add(user) → db.commit() → db.refresh(user)
+        │
+        ▼
+models/user.py         "users" table (SQLModel)
+        │
+        ▼
+api/v1/users.py        entity → UserRead DTO → ApiResponse {code, message, data}
+```
+
 ## Stack
 
 Python 3.12 · FastAPI · SQLModel (tables) + Pydantic v2 (DTOs) · SQLAlchemy 2 async · asyncpg · PostgreSQL · Alembic · python-jose · bcrypt · OpenTelemetry · stdlib JSON logging.
@@ -10,6 +59,7 @@ Python 3.12 · FastAPI · SQLModel (tables) + Pydantic v2 (DTOs) · SQLAlchemy 2
 
 Every file and folder has a single responsibility. Keep this map updated (rule 18).
 
+```text
 platform-admin-v2/
 ├── .github/workflows/ci.yml    # CI: lint, types, security scan, tests
 ├── .pre-commit-config.yaml     # git hooks (whitespace, ruff)
@@ -45,7 +95,7 @@ platform-admin-v2/
 │   │   └── logging.py          # one access-log line per request
 │   ├── models/
 │   │   ├── __init__.py         # re-exports models (registers tables for Alembic)
-│   │   ├── enums.py            # UserStatus enum
+│   │   ├── enums.py            # UserStatus, AuditAction, AuditResourceType
 │   │   ├── user.py             # users table
 │   │   ├── platform_admin.py   # platform_admins table
 │   │   └── audit_log.py        # audit_logs table
@@ -55,10 +105,10 @@ platform-admin-v2/
 │   │   └── audit_repository.py # audit SQL (insert + list only — append-only)
 │   ├── schemas/
 │   │   ├── common.py           # ApiResponse envelope + Pagination
-│   │   ├── auth.py             # auth DTOs
-│   │   ├── user.py             # user DTOs + password policy
-│   │   ├── audit.py            # audit DTOs
-│   │   └── health.py           # health result codes/messages
+│   │   ├── auth.py             # auth DTOs + result codes
+│   │   ├── user.py             # user DTOs + password policy + result codes
+│   │   ├── audit.py            # audit DTOs + result codes
+│   │   └── health.py           # health result codes
 │   ├── services/
 │   │   ├── auth_service.py     # login business logic
 │   │   ├── user_service.py     # user business rules
@@ -73,18 +123,24 @@ platform-admin-v2/
 │   └── seed_admin.py           # create/reset a Platform Admin manually
 ├── tests/
 │   ├── conftest.py             # env setup + TestClient fixture
-│   └── unit/                   # unit tests (one file per module)
+│   └── unit/                   # unit tests (one file per layer)
 ├── CONTEXT.md                  # domain glossary
 ├── README.md                   # this file
 └── pyproject.toml              # project + tooling config
+```
+
+> `docs/` and `CONTEXT.md` are currently git-ignored (local notes, not pushed yet).
 
 ## Run
 
-See `docs/api.md` for the full walkthrough. Quick start:
-
+```bash
 uv sync
 uv run python -m alembic upgrade head
+uv run python scripts/seed_admin.py --username admin --password '<password>'
 uv run app
+```
+
+See `docs/api.md` for the full walkthrough.
 
 ## Checks before committing
 
