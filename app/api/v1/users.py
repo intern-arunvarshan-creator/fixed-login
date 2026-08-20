@@ -13,12 +13,12 @@ from app.core.constants import (
     MIN_PAGE_SIZE,
 )
 from app.database import get_db
-from app.models.enums import UserStatus
+from app.models.enums import AuditAction, AuditResourceType, UserStatus
 from app.models.platform_admin import PlatformAdmin
 from app.models.user import User
 from app.schemas.common import ApiResponse, Pagination
 from app.schemas.user import UserCreate, UserListData, UserRead, UserReplace, UserUpdate
-from app.services import audit_service, user_service
+from app.services import user_service
 from app.utils.pagination import total_pages
 
 router = APIRouter(tags=["Users"])
@@ -47,8 +47,8 @@ async def create_user(
         db,
         request,
         actor=_admin.username,
-        action=audit_service.ACTION_USER_CREATE,
-        resource_type=audit_service.RESOURCE_USER,
+        action=AuditAction.USER_CREATE,
+        resource_type=AuditResourceType.USER,
         resource_id=str(user.id),
         details={"email": user.email, "name": user.name},
     )
@@ -94,8 +94,8 @@ async def replace_user(
         db,
         request,
         actor=_admin.username,
-        action=audit_service.ACTION_USER_REPLACE,
-        resource_type=audit_service.RESOURCE_USER,
+        action=AuditAction.USER_REPLACE,
+        resource_type=AuditResourceType.USER,
         resource_id=str(user.id),
         details={"email": user.email},
     )
@@ -115,8 +115,8 @@ async def update_user(
         db,
         request,
         actor=_admin.username,
-        action=audit_service.ACTION_USER_UPDATE,
-        resource_type=audit_service.RESOURCE_USER,
+        action=AuditAction.USER_UPDATE,
+        resource_type=AuditResourceType.USER,
         resource_id=str(user.id),
         details={"changed_fields": sorted(data.model_dump(exclude_unset=True).keys())},
     )
@@ -135,8 +135,8 @@ async def delete_user(
         db,
         request,
         actor=_admin.username,
-        action=audit_service.ACTION_USER_DELETE,
-        resource_type=audit_service.RESOURCE_USER,
+        action=AuditAction.USER_DELETE,
+        resource_type=AuditResourceType.USER,
         resource_id=str(user_id),
     )
     return ApiResponse(code=CODE_DELETED, message=MSG_DELETED, data=None)

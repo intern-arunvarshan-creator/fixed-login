@@ -53,7 +53,7 @@ target-version = "py312"
 select = ["E", "F", "W", "I", "UP", "B", "S"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101"]   # assert is correct and expected in tests
+"tests/**" = ["S101", "S105", "S106"]   # fake passwords/tokens in test fixtures are safe
 
 [tool.ruff.lint.flake8-bugbear]
 extend-immutable-calls = ["fastapi.Depends", "fastapi.Query"]  # FastAPI reads these at import; safe as defaults
@@ -71,7 +71,7 @@ module = ["jose"]
 ignore_missing_imports = true   # python-jose ships no type stubs
 
 [tool.pytest.ini_options]
-addopts = "--cov=app --cov-report=term-missing"
+addopts = "--cov=app --cov-report=term-missing "
 testpaths = ["tests"]
 
 [tool.bandit]

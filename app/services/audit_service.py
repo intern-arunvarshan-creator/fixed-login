@@ -10,16 +10,6 @@ from app.repositories import audit_repository
 
 logger = logging.getLogger("app.services.audit")
 
-ACTION_LOGIN_SUCCESS = "auth.login.success"
-ACTION_LOGIN_FAILURE = "auth.login.failure"
-ACTION_USER_CREATE = "user.create"
-ACTION_USER_UPDATE = "user.update"
-ACTION_USER_REPLACE = "user.replace"
-ACTION_USER_DELETE = "user.delete"
-
-RESOURCE_AUTH = "auth"
-RESOURCE_USER = "user"
-
 
 @traced("audit_service.record")
 async def record(

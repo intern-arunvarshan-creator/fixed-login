@@ -4,9 +4,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.audit import record_audit
 from app.database import get_db
 from app.exceptions.errors import ApiError
+from app.models.enums import AuditAction, AuditResourceType
 from app.schemas.auth import LoginRequest, RefreshRequest, TokenResponse
 from app.schemas.common import ApiResponse
-from app.services import audit_service, auth_service
+from app.services import auth_service
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -53,9 +54,7 @@ async def _audit_login(
         db,
         request,
         actor=credentials.username,
-        action=(
-            audit_service.ACTION_LOGIN_SUCCESS if success else audit_service.ACTION_LOGIN_FAILURE
-        ),
-        resource_type=audit_service.RESOURCE_AUTH,
+        action=AuditAction.LOGIN_SUCCESS if success else AuditAction.LOGIN_FAILURE,
+        resource_type=AuditResourceType.AUTH,
         resource_id=credentials.username,
     )

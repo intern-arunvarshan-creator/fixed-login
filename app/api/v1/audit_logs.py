@@ -11,6 +11,7 @@ from app.core.constants import (
 )
 from app.database import get_db
 from app.models.audit_log import AuditLog
+from app.models.enums import AuditAction, AuditResourceType
 from app.models.platform_admin import PlatformAdmin
 from app.schemas.audit import AuditLogListData, AuditLogRead
 from app.schemas.common import ApiResponse, Pagination
@@ -28,8 +29,8 @@ async def list_audit_logs(
     page: int = Query(DEFAULT_PAGE, ge=MIN_PAGE),
     limit: int = Query(DEFAULT_PAGE_SIZE, ge=MIN_PAGE_SIZE, le=MAX_PAGE_SIZE),
     actor: str | None = Query(None),
-    action: str | None = Query(None),
-    resource_type: str | None = Query(None),
+    action: AuditAction | None = Query(None),
+    resource_type: AuditResourceType | None = Query(None),
     db: AsyncSession = Depends(get_db),
     _admin: PlatformAdmin = Depends(get_current_admin),
 ) -> ApiResponse[AuditLogListData]:
