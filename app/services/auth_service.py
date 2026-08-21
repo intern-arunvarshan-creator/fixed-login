@@ -1,3 +1,5 @@
+import uuid
+
 from jose import JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,19 +10,22 @@ from app.core.security import (
     verify_password,
 )
 from app.core.tracing import traced
-from app.exceptions.errors import invalid_credentials, not_authenticated
+from app.exceptions.errors import account_inactive, invalid_credentials, not_authenticated
+from app.models.enums import AdminStatus
 from app.repositories import auth_repository
 from app.schemas.auth import LoginRequest, RefreshRequest, TokenResponse
 
 
 @traced("auth_service.login")
 async def login(db: AsyncSession, credentials: LoginRequest) -> TokenResponse:
-    admin = await auth_repository.get_admin_by_username(db, credentials.username)
+    admin = await auth_repository.get_admin_by_email(db, credentials.email)
     if admin is None or not verify_password(credentials.password, admin.hashed_password):
         raise invalid_credentials()
+    if admin.status != AdminStatus.ACTIVE:
+        raise account_inactive()
     return TokenResponse(
-        access_token=create_access_token(admin.username),
-        refresh_token=create_refresh_token(admin.username),
+        access_token=create_access_token(str(admin.id)),
+        refresh_token=create_refresh_token(str(admin.id)),
     )
 
 
@@ -31,11 +36,16 @@ async def refresh(db: AsyncSession, payload: RefreshRequest) -> TokenResponse:
         raise not_authenticated() from None
     if data.get("type") != "refresh":
         raise not_authenticated()
-    username = data.get("sub")
-    admin = await auth_repository.get_admin_by_username(db, str(username))
+    admin = None
+    try:
+        admin_id = uuid.UUID(str(data.get("sub")))
+    except ValueError:
+        admin_id = None
+    if admin_id is not None:
+        admin = await auth_repository.get_admin_by_id(db, admin_id)
     if admin is None:
         raise not_authenticated()
     return TokenResponse(
-        access_token=create_access_token(admin.username),
-        refresh_token=create_refresh_token(admin.username),
+        access_token=create_access_token(str(admin.id)),
+        refresh_token=create_refresh_token(str(admin.id)),
     )

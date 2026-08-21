@@ -1,7 +1,8 @@
 """Create (or reset) a Platform Admin directly in the database.
 
 Usage:
-    uv run python scripts/seed_admin.py --username admin --password 'S3cureP@ss'
+    uv run python scripts/seed_admin.py \\
+        --username admin --email admin@example.com --password 'S3cureP@ss'
 """
 
 import argparse
@@ -15,26 +16,30 @@ from app.database.database import async_session_factory
 from app.models.platform_admin import PlatformAdmin
 
 
-async def seed(username: str, password: str) -> None:
+async def seed(username: str, email: str, password: str) -> None:
     async with async_session_factory() as db:
-        result = await db.execute(
-            select(PlatformAdmin).where(col(PlatformAdmin.username) == username)
-        )
+        result = await db.execute(select(PlatformAdmin).where(col(PlatformAdmin.email) == email))
         existing = result.scalar_one_or_none()
         if existing is not None:
+            existing.username = username
             existing.hashed_password = hash_password(password)
         else:
-            db.add(PlatformAdmin(username=username, hashed_password=hash_password(password)))
+            db.add(
+                PlatformAdmin(
+                    username=username, email=email, hashed_password=hash_password(password)
+                )
+            )
         await db.commit()
-    print(f"PlatformAdmin '{username}' is ready.")
+    print(f"PlatformAdmin '{email}' is ready.")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--username", required=True)
+    parser.add_argument("--email", required=True)
     parser.add_argument("--password", required=True)
     args = parser.parse_args()
-    asyncio.run(seed(args.username, args.password))
+    asyncio.run(seed(args.username, args.email, args.password))
 
 
 if __name__ == "__main__":

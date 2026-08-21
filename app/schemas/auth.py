@@ -1,9 +1,4 @@
-from functools import partial
-from typing import Annotated
-
-from pydantic import AfterValidator, BaseModel
-
-from app.utils.validate import validate_slug_format
+from pydantic import BaseModel, EmailStr
 
 CODE_LOGIN_OK = "S_200_AUTH_LOGIN_OK"
 MSG_LOGIN_OK = "Login successful"
@@ -12,7 +7,7 @@ MSG_REFRESH_OK = "Token refreshed"
 
 
 class LoginRequest(BaseModel):
-    username: Annotated[str, AfterValidator(partial(validate_slug_format, field_label="Username"))]
+    email: EmailStr
     password: str
 
 

@@ -6,6 +6,11 @@ class UserStatus(StrEnum):
     INACTIVE = "inactive"
 
 
+class AdminStatus(StrEnum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+
+
 class AuditAction(StrEnum):
     LOGIN_SUCCESS = "auth.login.success"
     LOGIN_FAILURE = "auth.login.failure"

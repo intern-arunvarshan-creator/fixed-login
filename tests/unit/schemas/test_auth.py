@@ -4,7 +4,7 @@ from app.schemas.auth import LoginRequest, TokenResponse
 
 
 def test_login_request() -> None:
-    assert LoginRequest(username="admin", password="pw").username == "admin"
+    assert LoginRequest(email="admin@example.com", password="pw").email == "admin@example.com"
 
 
 def test_token_response_defaults() -> None:

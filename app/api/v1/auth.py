@@ -58,8 +58,8 @@ async def _audit_login(
     await record_audit(
         db,
         request,
-        actor=credentials.username,
+        actor=credentials.email,
         action=AuditAction.LOGIN_SUCCESS if success else AuditAction.LOGIN_FAILURE,
         resource_type=AuditResourceType.AUTH,
-        resource_id=credentials.username,
+        resource_id=credentials.email,
     )
