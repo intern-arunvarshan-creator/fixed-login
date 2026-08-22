@@ -74,6 +74,7 @@ platform-admin-v2/
 │   ├── main.py                 # FastAPI entrypoint; wires routers + middleware + tracing
 │   ├── database/
 │   │   ├── database.py         # async engine, session factory, get_db dependency
+│   │   ├── session.py          # request-scoped session holder (get_session)
 │   │   └── scripts/
 │   │       └── seed_admin.py   # create/reset a Platform Admin manually
 │   ├── api/
@@ -104,6 +105,7 @@ platform-admin-v2/
 │   │   └── audit_log.py        # audit_logs table
 │   ├── repositories/
 │   │   ├── auth_repository.py  # admin lookup
+│   │   ├── health_repository.py # DB liveness probe (SELECT 1)
 │   │   ├── user_repository.py  # all user SQL
 │   │   └── audit_repository.py # audit SQL (insert + list only — append-only)
 │   ├── schemas/
@@ -114,6 +116,7 @@ platform-admin-v2/
 │   │   └── health.py           # health result codes
 │   ├── services/
 │   │   ├── auth_service.py     # login business logic
+│   │   ├── health_service.py   # service health check
 │   │   ├── user_service.py     # user business rules
 │   │   └── audit_service.py    # audit recording (best-effort)
 │   └── utils/
