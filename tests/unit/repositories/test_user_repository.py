@@ -54,3 +54,25 @@ async def test_list_users_with_filters() -> None:
     )
     assert users == []
     assert total == 1
+
+
+async def test_update_user_applies_fields_and_commits() -> None:
+    db = MagicMock()
+    db.commit = AsyncMock()
+    db.refresh = AsyncMock()
+    user = _user()
+    result = await user_repository.update_user(db, user, {"name": "Bob"})
+    assert result is user
+    assert user.name == "Bob"
+    db.commit.assert_awaited_once()
+    db.refresh.assert_awaited_once_with(user)
+
+
+async def test_delete_user_commits() -> None:
+    db = MagicMock()
+    db.delete = AsyncMock()
+    db.commit = AsyncMock()
+    user = _user()
+    await user_repository.delete_user(db, user)
+    db.delete.assert_awaited_once_with(user)
+    db.commit.assert_awaited_once()

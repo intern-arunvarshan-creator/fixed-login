@@ -8,7 +8,7 @@ import pytest
 from app.exceptions.errors import ApiError
 from app.models.enums import UserStatus
 from app.models.user import User
-from app.schemas.user import UserCreate, UserUpdate
+from app.schemas.user import UserCreate, UserReplace, UserUpdate
 from app.services import user_service
 
 
@@ -70,6 +70,17 @@ async def test_get_user_found() -> None:
     assert result.id == user.id
 
 
+async def test_list_users() -> None:
+    with patch.object(
+        user_service.user_repository,
+        "list_users",
+        new=AsyncMock(return_value=([], 0)),
+    ):
+        users, total = await user_service.list_users(MagicMock(), page=1, limit=20)
+    assert users == []
+    assert total == 0
+
+
 async def test_update_user_applies_fields() -> None:
     user = _user()
 
@@ -91,6 +102,51 @@ async def test_update_user_applies_fields() -> None:
     ):
         result = await user_service.update_user(MagicMock(), user.id, UserUpdate(name="Bob"))
     assert result.name == "Bob"
+
+
+async def test_update_user_email_change() -> None:
+    user = _user()
+    with (
+        patch.object(user_service.user_repository, "get_user", new=AsyncMock(return_value=user)),
+        patch.object(
+            user_service.user_repository,
+            "get_user_by_email",
+            new=AsyncMock(return_value=None),
+        ),
+        patch.object(
+            user_service.user_repository,
+            "update_user",
+            new=AsyncMock(side_effect=lambda db, u, payload: u),
+        ),
+    ):
+        result = await user_service.update_user(
+            MagicMock(), user.id, UserUpdate(email="new@example.com")
+        )
+    assert result is user
+
+
+async def test_replace_user() -> None:
+    user = _user()
+    with (
+        patch.object(user_service.user_repository, "get_user", new=AsyncMock(return_value=user)),
+        patch.object(
+            user_service.user_repository,
+            "get_user_by_email",
+            new=AsyncMock(return_value=None),
+        ),
+        patch.object(user_service, "hash_password", return_value="hashed"),
+        patch.object(
+            user_service.user_repository,
+            "update_user",
+            new=AsyncMock(side_effect=lambda db, u, payload: u),
+        ),
+    ):
+        result = await user_service.replace_user(
+            MagicMock(),
+            user.id,
+            UserReplace(name="Alice", email="alice@example.com", password="S3cureP@ss"),
+        )
+    assert result is user
 
 
 async def test_delete_user() -> None:

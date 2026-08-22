@@ -4,6 +4,7 @@ import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from jose import JWTError
 
 from app.exceptions.errors import ApiError
 from app.models.enums import AdminStatus
@@ -96,6 +97,37 @@ async def test_refresh_success() -> None:
 async def test_refresh_rejects_malformed_subject() -> None:
     with patch.object(
         auth_service, "decode_token", return_value={"type": "refresh", "sub": "not-a-uuid"}
+    ):
+        with pytest.raises(ApiError):
+            await auth_service.refresh(MagicMock(), RefreshRequest(refresh_token="r"))
+
+
+async def test_refresh_rejects_wrong_token_type() -> None:
+    with patch.object(
+        auth_service, "decode_token", return_value={"type": "access", "sub": str(uuid.uuid4())}
+    ):
+        with pytest.raises(ApiError):
+            await auth_service.refresh(MagicMock(), RefreshRequest(refresh_token="r"))
+
+
+async def test_refresh_rejects_invalid_token() -> None:
+    with patch.object(auth_service, "decode_token", side_effect=JWTError("bad token")):
+        with pytest.raises(ApiError):
+            await auth_service.refresh(MagicMock(), RefreshRequest(refresh_token="r"))
+
+
+async def test_refresh_rejects_unknown_admin() -> None:
+    with (
+        patch.object(
+            auth_service,
+            "decode_token",
+            return_value={"type": "refresh", "sub": str(uuid.uuid4())},
+        ),
+        patch.object(
+            auth_service.auth_repository,
+            "get_admin_by_id",
+            new=AsyncMock(return_value=None),
+        ),
     ):
         with pytest.raises(ApiError):
             await auth_service.refresh(MagicMock(), RefreshRequest(refresh_token="r"))

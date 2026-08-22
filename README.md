@@ -72,7 +72,10 @@ platform-admin-v2/
 │   └── versions/               # migration scripts (0001_initial_schema, ...)
 ├── app/
 │   ├── main.py                 # FastAPI entrypoint; wires routers + middleware + tracing
-│   ├── database.py             # async engine, session factory, get_db dependency
+│   ├── database/
+│   │   ├── database.py         # async engine, session factory, get_db dependency
+│   │   └── scripts/
+│   │       └── seed_admin.py   # create/reset a Platform Admin manually
 │   ├── api/
 │   │   ├── deps.py             # get_current_admin auth dependency
 │   │   ├── audit.py            # request → audit-context helper
@@ -115,16 +118,18 @@ platform-admin-v2/
 │   │   └── audit_service.py    # audit recording (best-effort)
 │   └── utils/
 │       ├── pagination.py       # total_pages helper
+│       ├── time.py             # utcnow helper
 │       └── validate.py         # shared request-field format validators
 ├── docs/
 │   ├── standards.md            # the coding rules
+│   ├── testing-standards.md    # enterprise testing rules (all test types)
 │   ├── api.md                  # API reference
 │   └── adr/                    # architecture decision records
-├── scripts/
-│   └── seed_admin.py           # create/reset a Platform Admin manually
 ├── tests/
-│   ├── conftest.py             # env setup + TestClient fixture
-│   └── unit/                   # unit tests (one file per layer)
+│   ├── conftest.py             # env setup (no DB connection)
+│   └── unit/
+│       ├── services/           # pure unit tests (repositories mocked)
+│       └── repositories/       # pure unit tests (mocked AsyncSession)
 ├── CONTEXT.md                  # domain glossary
 ├── README.md                   # this file
 └── pyproject.toml              # project + tooling config
@@ -137,7 +142,7 @@ platform-admin-v2/
 ```bash
 uv sync
 uv run python -m alembic upgrade head
-uv run python scripts/seed_admin.py --username admin --password '<password>'
+uv run python app/database/scripts/seed_admin.py --username admin --email admin@example.com --password '<password>'
 uv run app
 ```
 

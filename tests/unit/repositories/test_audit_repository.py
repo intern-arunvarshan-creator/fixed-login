@@ -25,3 +25,15 @@ async def test_list_audit_logs_empty() -> None:
     entries, total = await audit_repository.list_audit_logs(db, page=1, limit=20)
     assert entries == []
     assert total == 0
+
+
+async def test_list_audit_logs_with_filters() -> None:
+    db = MagicMock()
+    db.scalar = AsyncMock(return_value=0)
+    db.execute = AsyncMock(return_value=MagicMock())
+    db.execute.return_value.scalars.return_value.all.return_value = []
+    entries, total = await audit_repository.list_audit_logs(
+        db, page=1, limit=20, actor="admin", action="user.create", resource_type="user"
+    )
+    assert entries == []
+    assert total == 0
