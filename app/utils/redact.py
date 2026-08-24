@@ -23,9 +23,7 @@ def _redact_value(value: Any) -> Any:
 
 
 def _redact_dict(data: dict[str, Any]) -> dict[str, Any]:
-    return {
-        k: (_REDACTED if k in _SENSITIVE_KEYS else _redact_value(v)) for k, v in data.items()
-    }
+    return {k: (_REDACTED if k in _SENSITIVE_KEYS else _redact_value(v)) for k, v in data.items()}
 
 
 def redact(data: dict[str, Any] | None) -> dict[str, Any] | None:

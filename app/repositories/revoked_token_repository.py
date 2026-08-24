@@ -19,7 +19,5 @@ async def revoke(jti: str, expires_at: datetime) -> RevokedToken:
 
 
 async def is_revoked(jti: str) -> bool:
-    result = await get_session().execute(
-        select(RevokedToken).where(col(RevokedToken.jti) == jti)
-    )
+    result = await get_session().execute(select(RevokedToken).where(col(RevokedToken.jti) == jti))
     return result.scalar_one_or_none() is not None
