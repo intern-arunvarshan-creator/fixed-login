@@ -65,7 +65,7 @@ def _build_exporters() -> list[SpanExporter]:
         SpanExportResult,
     )
 
-    class FileSpanExporter(SpanExporter):  # type: ignore[misc]  # optional SDK dep is Any when absent
+    class FileSpanExporter(SpanExporter):
         """Append one compact JSON span per line to a file (JSON Lines)."""
 
         def __init__(self, file_path: str | Path) -> None:
