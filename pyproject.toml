@@ -1,5 +1,5 @@
 [project]
-name = "platform-admin-v2"
+name = "platform-admin"
 version = "0.1.0"
 description = "Backend for Platform Admins to manage platform Users."
 requires-python = ">=3.12"

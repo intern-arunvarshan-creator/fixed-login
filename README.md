@@ -1,4 +1,4 @@
-# platform-admin-v2
+# platform-admin
 
 FastAPI backend where **Platform Admins** log in and manage platform **Users**, with an append-only audit log.
 
@@ -60,7 +60,7 @@ Python 3.12 · FastAPI · SQLModel (tables) + Pydantic v2 (DTOs) · SQLAlchemy 2
 Every file and folder has a single responsibility. Keep this map updated (rule 18).
 
 ```text
-platform-admin-v2/
+platform-admin/
 ├── .github/workflows/ci.yml    # CI: lint, types, security scan, tests
 ├── .pre-commit-config.yaml     # git hooks (whitespace, ruff)
 ├── .python-version             # pinned Python 3.12
@@ -161,7 +161,7 @@ See `docs/api.md` for the full walkthrough.
 
 ## Checks before committing
 
-Run all of these from `platform-admin-v2/` before you commit. CI runs the same checks on every push/PR.
+Run all of these from `platform-admin/` before you commit. CI runs the same checks on every push/PR.
 
 ```bash
 # 1. Format (rewrites files to match the style)
