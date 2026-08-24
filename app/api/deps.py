@@ -1,6 +1,6 @@
 """Authentication dependency: resolve the current admin from the bearer token."""
 
-import uuid
+from typing import Any
 
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -14,7 +14,7 @@ from app.services import auth_service
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
-def _admin_id_from(credentials: HTTPAuthorizationCredentials | None) -> uuid.UUID:
+def _access_token_payload(credentials: HTTPAuthorizationCredentials | None) -> dict[str, Any]:
     if credentials is None:
         raise not_authenticated()
     try:
@@ -23,16 +23,10 @@ def _admin_id_from(credentials: HTTPAuthorizationCredentials | None) -> uuid.UUI
         raise not_authenticated() from None
     if payload.get("type") != "access":
         raise not_authenticated()
-    subject = payload.get("sub")
-    if not subject:
-        raise not_authenticated()
-    try:
-        return uuid.UUID(str(subject))
-    except ValueError:
-        raise not_authenticated() from None
+    return payload
 
 
 async def get_current_admin(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
 ) -> PlatformAdmin:
-    return await auth_service.get_admin_by_id(_admin_id_from(credentials))
+    return await auth_service.get_admin_from_payload(_access_token_payload(credentials))

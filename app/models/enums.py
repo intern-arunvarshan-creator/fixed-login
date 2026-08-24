@@ -14,6 +14,8 @@ class AdminStatus(StrEnum):
 class AuditAction(StrEnum):
     LOGIN_SUCCESS = "auth.login.success"
     LOGIN_FAILURE = "auth.login.failure"
+    LOGOUT = "auth.logout"
+    PASSWORD_RESET_SUCCESS = "auth.password_reset.success"  # noqa: S105
     USER_CREATE = "user.create"
     USER_UPDATE = "user.update"
     USER_REPLACE = "user.replace"
@@ -45,6 +47,8 @@ class AuditActionFilter(StrEnum):
     ALL = "All"
     LOGIN_SUCCESS = AuditAction.LOGIN_SUCCESS.value
     LOGIN_FAILURE = AuditAction.LOGIN_FAILURE.value
+    LOGOUT = AuditAction.LOGOUT.value
+    PASSWORD_RESET_SUCCESS = AuditAction.PASSWORD_RESET_SUCCESS.value
     USER_CREATE = AuditAction.USER_CREATE.value
     USER_UPDATE = AuditAction.USER_UPDATE.value
     USER_REPLACE = AuditAction.USER_REPLACE.value
