@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Depends, Query
 
-from app.api.deps import get_current_admin
+from app.api.deps import require_permission
 from app.core.constants import (
     DEFAULT_PAGE,
     DEFAULT_PAGE_SIZE,
@@ -16,6 +16,7 @@ from app.models.enums import (
     AuditActionFilter,
     AuditResourceType,
     AuditResourceTypeFilter,
+    PermissionName,
     resolve_filter,
 )
 from app.models.platform_admin import PlatformAdmin
@@ -36,7 +37,7 @@ async def list_audit_logs(
     resource_type: AuditResourceTypeFilter = Query(
         AuditResourceTypeFilter.ALL, description="Filter by resource type"
     ),
-    _admin: PlatformAdmin = Depends(get_current_admin),
+    _admin: PlatformAdmin = Depends(require_permission(PermissionName.AUDIT_READ)),
 ) -> ApiResponse[AuditLogListData]:
     """List audit log entries, paginated and filterable by actor, action, or resource type."""
     action_value = resolve_filter(value=action, base=AuditAction)

@@ -13,22 +13,24 @@ from sqlmodel import col
 
 from app.core.security import hash_password
 from app.database.database import async_session_factory
+from app.database.scripts.seed_rbac import assign_super_admin, ensure_catalog
 from app.models.platform_admin import PlatformAdmin
 
 
 async def seed(username: str, email: str, password: str) -> None:
     async with async_session_factory() as db:
         result = await db.execute(select(PlatformAdmin).where(col(PlatformAdmin.email) == email))
-        existing = result.scalar_one_or_none()
-        if existing is not None:
-            existing.username = username
-            existing.hashed_password = hash_password(password)
+        admin = result.scalar_one_or_none()
+        if admin is not None:
+            admin.username = username
+            admin.hashed_password = hash_password(password)
         else:
-            db.add(
-                PlatformAdmin(
-                    username=username, email=email, hashed_password=hash_password(password)
-                )
+            admin = PlatformAdmin(
+                username=username, email=email, hashed_password=hash_password(password)
             )
+            db.add(admin)
+        await ensure_catalog(db)
+        await assign_super_admin(db, admin.id)
         await db.commit()
     print(f"PlatformAdmin '{email}' is ready.")
 

@@ -148,3 +148,20 @@ async def test_get_admin_by_id_unknown_raises() -> None:
     ):
         with pytest.raises(ApiError):
             await auth_service.get_admin_by_id(uuid.uuid4())
+
+
+async def test_get_admin_by_id_inactive_raises() -> None:
+    admin = PlatformAdmin(
+        id=uuid.uuid4(),
+        username="admin",
+        email="admin@example.com",
+        hashed_password="hash",
+        status=AdminStatus.INACTIVE,
+    )
+    with patch.object(
+        auth_service.auth_repository,
+        "get_admin_by_id",
+        new=AsyncMock(return_value=admin),
+    ):
+        with pytest.raises(ApiError):
+            await auth_service.get_admin_by_id(admin.id)
