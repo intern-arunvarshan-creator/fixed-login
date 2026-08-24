@@ -1,8 +1,11 @@
-"""Create (or reset) a Platform Admin directly in the database.
+"""Create (or reset) a Platform Admin — defaults to admin@gmail.com / Admin@1234.
 
-Usage:
+Usage (dev defaults):
+    uv run python app/database/scripts/seed_admin.py
+
+Override:
     uv run python app/database/scripts/seed_admin.py \\
-        --username admin --email admin@example.com --password 'S3cureP@ss'
+        --username admin --email admin@gmail.com --password 'Admin@1234'
 """
 
 import argparse
@@ -37,9 +40,12 @@ async def seed(username: str, email: str, password: str) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--username", required=True)
-    parser.add_argument("--email", required=True)
-    parser.add_argument("--password", required=True)
+    parser.add_argument("--username", default="admin")
+    parser.add_argument("--email", default="admin@gmail.com")
+    parser.add_argument(
+        "--password",
+        default="Admin@1234",  # noqa: S105  # nosec B105  (dev-only default; override in real envs)
+    )
     args = parser.parse_args()
     asyncio.run(seed(args.username, args.email, args.password))
 

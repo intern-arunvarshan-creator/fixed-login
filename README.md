@@ -152,8 +152,8 @@ platform-admin-v2/
 ```bash
 uv sync
 uv run python -m alembic upgrade head
-uv run python app/database/scripts/seed_admin.py --username admin --email admin@example.com --password '<password>'
-uv run python app/database/scripts/seed_rbac.py   # idempotent: seeds catalog, backfills super_admin
+uv run python app/database/scripts/seed_admin.py   # default: admin@gmail.com / Admin@1234 → super_admin
+uv run python app/database/scripts/seed_rbac.py    # optional: backfills super_admin to other existing admins
 uv run app
 ```
 
