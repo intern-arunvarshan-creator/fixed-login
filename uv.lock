@@ -1337,7 +1337,7 @@ wheels = [
 ]
 
 [[package]]
-name = "platform-admin-v2"
+name = "platform-admin"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
