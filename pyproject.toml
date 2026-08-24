@@ -8,6 +8,10 @@ dependencies = [
     "bcrypt>=5.0.0",
     "fastapi>=0.141.1",
     "opentelemetry-api>=1.44.0",
+    "opentelemetry-exporter-otlp-proto-http>=1.44.0",
+    "opentelemetry-instrumentation-fastapi>=0.65b0",
+    "opentelemetry-instrumentation-sqlalchemy>=0.65b0",
+    "opentelemetry-sdk>=1.44.0",
     "pydantic-settings>=2.15.0",
     "pydantic[email]>=2.13.4",
     "python-jose[cryptography]>=3.5.0",
@@ -27,13 +31,6 @@ dev = [
     "pytest-asyncio>=1.0",
     "pytest-cov>=7.1.0",
     "ruff>=0.16.3",
-]
-
-tracing = [
-    "opentelemetry-exporter-otlp-proto-http>=1.44.0",
-    "opentelemetry-instrumentation-fastapi>=0.65b0",
-    "opentelemetry-instrumentation-sqlalchemy>=0.65b0",
-    "opentelemetry-sdk>=1.44.0",
 ]
 
 [build-system]
@@ -60,7 +57,7 @@ select = ["E", "F", "W", "I", "UP", "B", "S"]
 "tests/**" = ["S101", "S105", "S106"]   # fake passwords/tokens in test fixtures are safe
 
 [tool.ruff.lint.flake8-bugbear]
-extend-immutable-calls = ["fastapi.Depends", "fastapi.Query"]  # FastAPI reads these at import; safe as defaults
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "app.api.deps.require_permission"]  # FastAPI reads these at import; safe as defaults
 
 [tool.ruff.format]
 quote-style = "double"

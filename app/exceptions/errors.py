@@ -30,6 +30,7 @@ EMAIL_EXISTS = ErrorSpec(409, "E_409_USR_EMAIL_EXISTS", "Email is already regist
 INVALID_CREDENTIALS = ErrorSpec(401, "E_401_AUTH_INVALID_CREDENTIALS", "Invalid email or password")
 NOT_AUTHENTICATED = ErrorSpec(401, "E_401_NOT_AUTHENTICATED", "Not authenticated")
 ACCOUNT_INACTIVE = ErrorSpec(403, "E_403_AUTH_ACCOUNT_INACTIVE", "This account is inactive")
+FORBIDDEN = ErrorSpec(403, "E_403_FORBIDDEN", "You do not have permission to perform this action")
 INTERNAL_ERROR = ErrorSpec(
     500, "E_500_INTERNAL_ERROR", "Something went wrong. Please try again later."
 )
@@ -66,6 +67,10 @@ def not_authenticated() -> ApiError:
 
 def account_inactive() -> ApiError:
     return _make(ACCOUNT_INACTIVE)
+
+
+def forbidden() -> ApiError:
+    return _make(FORBIDDEN)
 
 
 def service_unavailable() -> ApiError:

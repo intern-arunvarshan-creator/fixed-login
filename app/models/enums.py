@@ -25,6 +25,17 @@ class AuditResourceType(StrEnum):
     USER = "user"
 
 
+class PermissionName(StrEnum):
+    """The fixed set of permissions routes can require (mirrors ``permissions`` table rows)."""
+
+    USER_CREATE = "user.create"
+    USER_READ = "user.read"
+    USER_UPDATE = "user.update"
+    USER_REPLACE = "user.replace"
+    USER_DELETE = "user.delete"
+    AUDIT_READ = "audit.read"
+
+
 def enum_values(enum_cls: type[Enum]) -> list[str]:
     """Return the stored values for an enum (used by SQLAlchemy's SAEnum)."""
     return [str(member.value) for member in enum_cls]

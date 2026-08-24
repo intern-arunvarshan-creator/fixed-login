@@ -37,6 +37,8 @@ async def get_admin_by_id(admin_id: uuid.UUID) -> PlatformAdmin:
     admin = await auth_repository.get_admin_by_id(admin_id)
     if admin is None:
         raise not_authenticated()
+    if admin.status != AdminStatus.ACTIVE:
+        raise account_inactive()
     return admin
 
 

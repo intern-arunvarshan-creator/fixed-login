@@ -19,7 +19,7 @@ services/     business rules (validation, uniqueness, password hashing, tokens)
 repositories/ the ONLY layer that writes SQL — one repository per model
    │
    ▼
-models/       SQLModel tables (User, PlatformAdmin, AuditLog) + enums
+models/       SQLModel tables (User, PlatformAdmin, AuditLog, Role, Permission) + enums
 ```
 
 Supporting modules around that core:
@@ -36,7 +36,7 @@ Supporting modules around that core:
 POST /api/v1/users  {"name", "email", "password", "status"}
         │
         ▼
-api/v1/users.py        parse body → UserCreate DTO · verify admin token (deps.py)
+api/v1/users.py        parse body → UserCreate DTO · verify token + permission (deps.py)
         │  await user_service.create_user(db, data)
         ▼
 services/user_service  email already taken? → raise · hash password (core/security)
@@ -76,9 +76,10 @@ platform-admin-v2/
 │   │   ├── database.py         # async engine, session factory, get_db dependency
 │   │   ├── session.py          # request-scoped session holder (get_session)
 │   │   └── scripts/
-│   │       └── seed_admin.py   # create/reset a Platform Admin manually
+│   │       ├── seed_admin.py   # create/reset a Platform Admin + assign super_admin
+│   │       └── seed_rbac.py    # seed RBAC catalog + backfill super_admin (idempotent)
 │   ├── api/
-│   │   ├── deps.py             # get_current_admin auth dependency
+│   │   ├── deps.py             # auth + permission deps (get_current_admin, require_permission)
 │   │   ├── audit.py            # request → audit-context helper
 │   │   └── v1/
 │   │       ├── health.py       # GET /health
@@ -99,14 +100,19 @@ platform-admin-v2/
 │   │   └── logging.py          # one access-log line per request
 │   ├── models/
 │   │   ├── __init__.py         # re-exports models (registers tables for Alembic)
-│   │   ├── enums.py            # UserStatus, AuditAction, AuditResourceType
+│   │   ├── enums.py            # StrEnums (UserStatus, AuditAction, PermissionName, ...)
 │   │   ├── user.py             # users table
 │   │   ├── platform_admin.py   # platform_admins table
+│   │   ├── role.py             # roles table
+│   │   ├── permission.py       # permissions table
+│   │   ├── role_permission.py  # role → permission grants
+│   │   ├── platform_admin_role.py  # admin → role assignments
 │   │   └── audit_log.py        # audit_logs table
 │   ├── repositories/
 │   │   ├── auth_repository.py  # admin lookup
 │   │   ├── health_repository.py # DB liveness probe (SELECT 1)
 │   │   ├── user_repository.py  # all user SQL
+│   │   ├── rbac_repository.py  # effective permissions lookup (all RBAC SQL)
 │   │   └── audit_repository.py # audit SQL (insert + list only — append-only)
 │   ├── schemas/
 │   │   ├── common.py           # ApiResponse envelope + Pagination
@@ -115,9 +121,10 @@ platform-admin-v2/
 │   │   ├── audit.py            # audit DTOs + result codes
 │   │   └── health.py           # health result codes
 │   ├── services/
-│   │   ├── auth_service.py     # login business logic
+│   │   ├── auth_service.py     # login + admin resolution (rejects inactive)
 │   │   ├── health_service.py   # service health check
 │   │   ├── user_service.py     # user business rules
+│   │   ├── rbac_service.py     # effective permissions business rule
 │   │   └── audit_service.py    # audit recording (best-effort)
 │   └── utils/
 │       ├── pagination.py       # total_pages helper
@@ -145,7 +152,8 @@ platform-admin-v2/
 ```bash
 uv sync
 uv run python -m alembic upgrade head
-uv run python app/database/scripts/seed_admin.py --username admin --email admin@example.com --password '<password>'
+uv run python app/database/scripts/seed_admin.py   # default: admin@gmail.com / Admin@1234 → super_admin
+uv run python app/database/scripts/seed_rbac.py    # optional: backfills super_admin to other existing admins
 uv run app
 ```
 
