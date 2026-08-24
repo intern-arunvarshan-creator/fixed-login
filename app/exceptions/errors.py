@@ -31,6 +31,8 @@ INVALID_CREDENTIALS = ErrorSpec(401, "E_401_AUTH_INVALID_CREDENTIALS", "Invalid 
 NOT_AUTHENTICATED = ErrorSpec(401, "E_401_NOT_AUTHENTICATED", "Not authenticated")
 ACCOUNT_INACTIVE = ErrorSpec(403, "E_403_AUTH_ACCOUNT_INACTIVE", "This account is inactive")
 FORBIDDEN = ErrorSpec(403, "E_403_FORBIDDEN", "You do not have permission to perform this action")
+ADMIN_NOT_FOUND = ErrorSpec(404, "E_404_AUTH_ADMIN_NOT_FOUND", "No account found with this email")
+INVALID_OTP = ErrorSpec(400, "E_400_AUTH_INVALID_OTP", "Invalid OTP")
 INTERNAL_ERROR = ErrorSpec(
     500, "E_500_INTERNAL_ERROR", "Something went wrong. Please try again later."
 )
@@ -71,6 +73,14 @@ def account_inactive() -> ApiError:
 
 def forbidden() -> ApiError:
     return _make(FORBIDDEN)
+
+
+def admin_not_found() -> ApiError:
+    return _make(ADMIN_NOT_FOUND)
+
+
+def invalid_otp() -> ApiError:
+    return _make(INVALID_OTP)
 
 
 def service_unavailable() -> ApiError:

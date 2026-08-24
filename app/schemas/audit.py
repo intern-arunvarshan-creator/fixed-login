@@ -19,6 +19,9 @@ class AuditLogRead(BaseModel):
     resource_type: str | None
     resource_id: str | None
     details: dict[str, Any] | None
+    url: str | None
+    payload: dict[str, Any] | None
+    response: dict[str, Any] | None
     request_id: str | None
     ip_address: str | None
     user_agent: str | None

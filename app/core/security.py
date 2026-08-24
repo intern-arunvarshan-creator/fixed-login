@@ -1,3 +1,4 @@
+import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 
@@ -21,22 +22,43 @@ def verify_password(plain: str, hashed: str) -> bool:
     return bcrypt.checkpw(truncated, hashed.encode("utf-8"))
 
 
-def _create_token(subject: str, token_type: str, expires_delta: timedelta) -> str:
+def _create_token(
+    subject: str,
+    token_type: str,
+    expires_delta: timedelta,
+    extra_claims: dict[str, Any] | None = None,
+) -> str:
     now = datetime.now(UTC)
     payload: dict[str, Any] = {
         "sub": subject,
+        "jti": str(uuid.uuid4()),
         "exp": now + expires_delta,
         "type": token_type,
     }
+    if extra_claims:
+        payload.update(extra_claims)
     return cast(str, jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm))
-
-
-def create_access_token(subject: str) -> str:
-    return _create_token(subject, "access", timedelta(minutes=settings.access_token_expire_minutes))
 
 
 def create_refresh_token(subject: str) -> str:
     return _create_token(subject, "refresh", timedelta(days=settings.refresh_token_expire_days))
+
+
+def create_access_token(subject: str, refresh_token: str) -> str:
+    """Create an access token carrying its sibling refresh token's jti/exp.
+
+    Logout only ever sees the access token (the bearer header); embedding the
+    refresh token's identity here lets it revoke both without the client
+    having to resend the refresh token.
+    """
+    refresh_payload = decode_token(refresh_token)
+    extra_claims = {"rjti": refresh_payload["jti"], "rexp": refresh_payload["exp"]}
+    return _create_token(
+        subject,
+        "access",
+        timedelta(minutes=settings.access_token_expire_minutes),
+        extra_claims,
+    )
 
 
 def decode_token(token: str) -> dict[str, Any]:
