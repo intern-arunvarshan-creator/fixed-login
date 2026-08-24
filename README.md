@@ -80,7 +80,7 @@ platform-admin/
 │   │       └── seed_rbac.py    # seed RBAC catalog + backfill super_admin (idempotent)
 │   ├── api/
 │   │   ├── deps.py             # auth + permission deps (get_current_admin, require_permission)
-│   │   ├── audit.py            # request → audit-context helper
+│   │   ├── audit.py            # @audit decorator + request-context helper
 │   │   └── v1/
 │   │       ├── health.py       # GET /api/v1/health
 │   │       ├── auth.py         # auth routes (login, refresh, OTP, password reset, logout)

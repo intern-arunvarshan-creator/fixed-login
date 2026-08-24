@@ -1,7 +1,8 @@
 """Audit log listing routes."""
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 
+from app.api.audit import audit
 from app.api.deps import require_permission
 from app.core.constants import (
     DEFAULT_PAGE,
@@ -31,7 +32,12 @@ router = APIRouter(tags=["Audit"])
     response_model=ApiResponse[ListData[AuditLogRead]],
     summary="List audit logs",
 )
+@audit(
+    action=AuditAction.AUDIT_READ,
+    resource_type=AuditResourceType.AUDIT,
+)
 async def list_audit_logs(
+    request: Request,
     page: int = Query(DEFAULT_PAGE, ge=MIN_PAGE),
     limit: int = Query(DEFAULT_PAGE_SIZE, ge=MIN_PAGE_SIZE, le=MAX_PAGE_SIZE),
     actor: str | None = Query(None, description="Filter by actor (username)"),

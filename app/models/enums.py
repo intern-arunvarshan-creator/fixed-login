@@ -14,20 +14,26 @@ class AdminStatus(StrEnum):
 class AuditAction(StrEnum):
     LOGIN_SUCCESS = "auth.login.success"
     LOGIN_FAILURE = "auth.login.failure"
+    REFRESH_SUCCESS = "auth.refresh.success"
+    REFRESH_FAILURE = "auth.refresh.failure"
     LOGOUT = "auth.logout"
     OTP_REQUESTED = "auth.password_reset.otp_requested"  # noqa: S105
     OTP_VERIFY_SUCCESS = "auth.password_reset.otp_verify_success"  # noqa: S105
     OTP_VERIFY_FAILURE = "auth.password_reset.otp_verify_failure"  # noqa: S105
     PASSWORD_RESET_SUCCESS = "auth.password_reset.success"  # noqa: S105  # nosec B105
+    PASSWORD_RESET_FAILURE = "auth.password_reset.failure"  # noqa: S105  # nosec B105
     USER_CREATE = "user.create"
     USER_UPDATE = "user.update"
     USER_REPLACE = "user.replace"
     USER_DELETE = "user.delete"
+    AUDIT_READ = "audit.read"
+    ACCESS_DENIED = "access.denied"
 
 
 class AuditResourceType(StrEnum):
     AUTH = "auth"
     USER = "user"
+    AUDIT = "audit"
 
 
 class PermissionName(StrEnum):
@@ -61,21 +67,27 @@ class AuditActionFilter(StrEnum):
     ALL = "All"
     LOGIN_SUCCESS = AuditAction.LOGIN_SUCCESS.value
     LOGIN_FAILURE = AuditAction.LOGIN_FAILURE.value
+    REFRESH_SUCCESS = AuditAction.REFRESH_SUCCESS.value
+    REFRESH_FAILURE = AuditAction.REFRESH_FAILURE.value
     LOGOUT = AuditAction.LOGOUT.value
     OTP_REQUESTED = AuditAction.OTP_REQUESTED.value
     OTP_VERIFY_SUCCESS = AuditAction.OTP_VERIFY_SUCCESS.value
     OTP_VERIFY_FAILURE = AuditAction.OTP_VERIFY_FAILURE.value
     PASSWORD_RESET_SUCCESS = AuditAction.PASSWORD_RESET_SUCCESS.value
+    PASSWORD_RESET_FAILURE = AuditAction.PASSWORD_RESET_FAILURE.value
     USER_CREATE = AuditAction.USER_CREATE.value
     USER_UPDATE = AuditAction.USER_UPDATE.value
     USER_REPLACE = AuditAction.USER_REPLACE.value
     USER_DELETE = AuditAction.USER_DELETE.value
+    AUDIT_READ = AuditAction.AUDIT_READ.value
+    ACCESS_DENIED = AuditAction.ACCESS_DENIED.value
 
 
 class AuditResourceTypeFilter(StrEnum):
     ALL = "All"
     AUTH = AuditResourceType.AUTH.value
     USER = AuditResourceType.USER.value
+    AUDIT = AuditResourceType.AUDIT.value
 
 
 def resolve_filter[T: StrEnum](value: StrEnum, base: type[T]) -> T | None:

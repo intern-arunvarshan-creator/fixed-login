@@ -4,7 +4,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, Query, Request
 
-from app.api.audit import record_audit
+from app.api.audit import audit
 from app.api.deps import require_permission
 from app.core.constants import (
     DEFAULT_PAGE,
@@ -45,6 +45,12 @@ router = APIRouter(tags=["Users"])
 
 
 @router.post("", response_model=ApiResponse[UserRead], status_code=201, summary="Create a user")
+@audit(
+    action=AuditAction.USER_CREATE,
+    resource_type=AuditResourceType.USER,
+    resource_id=lambda ctx: str(ctx.result.data.id),
+    details=lambda ctx: {"email": ctx.result.data.email, "name": ctx.result.data.name},
+)
 async def create_user(
     data: UserCreate,
     request: Request,
@@ -52,18 +58,7 @@ async def create_user(
 ) -> ApiResponse[UserRead]:
     """Create a new user with a name, email, and password."""
     user = await user_service.create_user(data)
-    resp = ApiResponse[UserRead](code=CODE_CREATED, message=MSG_CREATED, data=user)
-    await record_audit(
-        request=request,
-        actor=_admin.username,
-        action=AuditAction.USER_CREATE,
-        resource_type=AuditResourceType.USER,
-        resource_id=str(user.id),
-        details={"email": user.email, "name": user.name},
-        payload=data.model_dump(mode="json"),
-        response=resp.model_dump(mode="json"),
-    )
-    return resp
+    return ApiResponse(code=CODE_CREATED, message=MSG_CREATED, data=user)
 
 
 @router.get("", response_model=ApiResponse[ListData[UserRead]], summary="List users")
@@ -102,6 +97,12 @@ async def get_user(
 
 
 @router.put("/{user_id}", response_model=ApiResponse[UserRead], summary="Fully replace a user")
+@audit(
+    action=AuditAction.USER_REPLACE,
+    resource_type=AuditResourceType.USER,
+    resource_id=lambda ctx: str(ctx.result.data.id),
+    details=lambda ctx: {"email": ctx.result.data.email},
+)
 async def replace_user(
     user_id: uuid.UUID,
     data: UserReplace,
@@ -110,21 +111,16 @@ async def replace_user(
 ) -> ApiResponse[UserRead]:
     """Replace a user's name, email, and password; status is left unchanged."""
     user = await user_service.replace_user(user_id=user_id, data=data)
-    resp = ApiResponse[UserRead](code=CODE_UPDATED, message=MSG_UPDATED, data=user)
-    await record_audit(
-        request=request,
-        actor=_admin.username,
-        action=AuditAction.USER_REPLACE,
-        resource_type=AuditResourceType.USER,
-        resource_id=str(user.id),
-        details={"email": user.email},
-        payload=data.model_dump(mode="json"),
-        response=resp.model_dump(mode="json"),
-    )
-    return resp
+    return ApiResponse(code=CODE_UPDATED, message=MSG_UPDATED, data=user)
 
 
 @router.patch("/{user_id}", response_model=ApiResponse[UserRead], summary="Partially update a user")
+@audit(
+    action=AuditAction.USER_UPDATE,
+    resource_type=AuditResourceType.USER,
+    resource_id=lambda ctx: str(ctx.result.data.id),
+    details=lambda ctx: {"changed_fields": sorted(ctx.body.model_dump(exclude_unset=True).keys())},
+)
 async def update_user(
     user_id: uuid.UUID,
     data: UserUpdate,
@@ -133,21 +129,15 @@ async def update_user(
 ) -> ApiResponse[UserRead]:
     """Partially update a user's name, email, or status."""
     user = await user_service.update_user(user_id=user_id, data=data)
-    resp = ApiResponse[UserRead](code=CODE_UPDATED, message=MSG_UPDATED, data=user)
-    await record_audit(
-        request=request,
-        actor=_admin.username,
-        action=AuditAction.USER_UPDATE,
-        resource_type=AuditResourceType.USER,
-        resource_id=str(user.id),
-        details={"changed_fields": sorted(data.model_dump(exclude_unset=True).keys())},
-        payload=data.model_dump(mode="json", exclude_unset=True),
-        response=resp.model_dump(mode="json"),
-    )
-    return resp
+    return ApiResponse(code=CODE_UPDATED, message=MSG_UPDATED, data=user)
 
 
 @router.delete("/{user_id}", response_model=ApiResponse[None], summary="Delete a user")
+@audit(
+    action=AuditAction.USER_DELETE,
+    resource_type=AuditResourceType.USER,
+    resource_id=lambda ctx: str(ctx.args["user_id"]),
+)
 async def delete_user(
     user_id: uuid.UUID,
     request: Request,
@@ -155,13 +145,4 @@ async def delete_user(
 ) -> ApiResponse[None]:
     """Delete a user by id."""
     await user_service.delete_user(user_id)
-    resp = ApiResponse[None](code=CODE_DELETED, message=MSG_DELETED, data=None)
-    await record_audit(
-        request=request,
-        actor=_admin.username,
-        action=AuditAction.USER_DELETE,
-        resource_type=AuditResourceType.USER,
-        resource_id=str(user_id),
-        response=resp.model_dump(mode="json"),
-    )
-    return resp
+    return ApiResponse(code=CODE_DELETED, message=MSG_DELETED, data=None)
