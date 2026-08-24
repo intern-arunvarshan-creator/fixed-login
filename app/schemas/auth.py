@@ -10,8 +10,9 @@ CODE_OTP_SENT = "S_200_AUTH_OTP_SENT"
 MSG_OTP_SENT = "OTP sent successfully"
 CODE_OTP_VERIFIED = "S_200_AUTH_OTP_VERIFIED"
 MSG_OTP_VERIFIED = "OTP verified successfully"
-CODE_PASSWORD_UPDATED = "S_200_AUTH_PASSWORD_UPDATED"  # noqa: S105
-MSG_PASSWORD_UPDATED = "Password updated successfully"  # noqa: S105
+# Response-code constants — "password" here names a response, not a stored secret.
+CODE_PASSWORD_UPDATED = "S_200_AUTH_PASSWORD_UPDATED"  # noqa: S105  # nosec B105
+MSG_PASSWORD_UPDATED = "Password updated successfully"  # noqa: S105  # nosec B105
 CODE_LOGOUT_OK = "S_200_AUTH_LOGOUT_OK"
 MSG_LOGOUT_OK = "Logged out successfully"
 
