@@ -7,7 +7,6 @@ from typing import Annotated
 from pydantic import AfterValidator, BaseModel, ConfigDict, EmailStr, Field
 
 from app.models.enums import UserStatus
-from app.schemas.common import Pagination
 from app.utils.validate import validate_slug_format
 
 PASSWORD_PATTERN = re.compile(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,13}$")
@@ -87,8 +86,3 @@ class UserRead(BaseModel):
     status: UserStatus
     created_at: datetime
     updated_at: datetime
-
-
-class UserListData(BaseModel):
-    data: list[UserRead]
-    pagination: Pagination

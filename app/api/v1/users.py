@@ -22,8 +22,7 @@ from app.models.enums import (
     resolve_filter,
 )
 from app.models.platform_admin import PlatformAdmin
-from app.models.user import User
-from app.schemas.common import ApiResponse, Pagination
+from app.schemas.common import ApiResponse, ListData, Pagination
 from app.schemas.user import (
     CODE_CREATED,
     CODE_DELETED,
@@ -36,13 +35,11 @@ from app.schemas.user import (
     MSG_LISTED,
     MSG_UPDATED,
     UserCreate,
-    UserListData,
     UserRead,
     UserReplace,
     UserUpdate,
 )
 from app.services import user_service
-from app.utils.pagination import total_pages
 
 router = APIRouter(tags=["Users"])
 
@@ -69,21 +66,29 @@ async def create_user(
     return resp
 
 
-@router.get("", response_model=ApiResponse[UserListData], summary="List users")
+@router.get("", response_model=ApiResponse[ListData[UserRead]], summary="List users")
 async def list_users(
     page: int = Query(DEFAULT_PAGE, ge=MIN_PAGE),
     limit: int = Query(DEFAULT_PAGE_SIZE, ge=MIN_PAGE_SIZE, le=MAX_PAGE_SIZE),
     search: str | None = Query(None, description="Search by name or email"),
     status: UserStatusFilter = Query(UserStatusFilter.ALL, description="Filter by user status"),
     _admin: PlatformAdmin = Depends(require_permission(PermissionName.USER_READ)),
-) -> ApiResponse[UserListData]:
+) -> ApiResponse[ListData[UserRead]]:
     """List users, paginated and optionally filtered by search text or status."""
-    status_value = resolve_filter(value=status, base=UserStatus)
     users, total = await user_service.list_users(
-        page=page, limit=limit, search=search, status=status_value
+        page=page,
+        limit=limit,
+        search=search,
+        status=resolve_filter(status, UserStatus),
     )
-    body = _to_user_list_data(users=users, page=page, limit=limit, total=total)
-    return ApiResponse(code=CODE_LISTED, message=MSG_LISTED, data=body)
+    return ApiResponse(
+        code=CODE_LISTED,
+        message=MSG_LISTED,
+        data=ListData[UserRead](
+            data=[UserRead.model_validate(u) for u in users],
+            pagination=Pagination.from_total(page, limit, total),
+        ),
+    )
 
 
 @router.get("/{user_id}", response_model=ApiResponse[UserRead], summary="Get a user")
@@ -160,15 +165,3 @@ async def delete_user(
         response=resp.model_dump(mode="json"),
     )
     return resp
-
-
-def _to_user_list_data(users: list[User], page: int, limit: int, total: int) -> UserListData:
-    return UserListData(
-        data=[UserRead.model_validate(u) for u in users],
-        pagination=Pagination(
-            page=page,
-            limit=limit,
-            total_items=total,
-            total_pages=total_pages(total_items=total, limit=limit),
-        ),
-    )

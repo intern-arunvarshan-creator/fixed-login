@@ -9,7 +9,13 @@ from jose import JWTError
 from app.exceptions.errors import ApiError
 from app.models.enums import AdminStatus
 from app.models.platform_admin import PlatformAdmin
-from app.schemas.auth import LoginRequest, RefreshRequest
+from app.schemas.auth import (
+    GenerateOtpRequest,
+    LoginRequest,
+    RefreshRequest,
+    UpdatePasswordRequest,
+    VerifyOtpRequest,
+)
 from app.services import auth_service
 
 
@@ -165,3 +171,125 @@ async def test_get_admin_by_id_inactive_raises() -> None:
     ):
         with pytest.raises(ApiError):
             await auth_service.get_admin_by_id(admin.id)
+
+
+async def test_generate_otp_returns_for_unknown_admin() -> None:
+    with patch.object(
+        auth_service.auth_repository,
+        "get_admin_by_email",
+        new=AsyncMock(return_value=None),
+    ):
+        await auth_service.generate_otp(GenerateOtpRequest(email="nope@example.com"))
+
+
+async def test_generate_otp_returns_for_inactive_admin() -> None:
+    admin = PlatformAdmin(
+        id=uuid.uuid4(),
+        username="admin",
+        email="admin@example.com",
+        hashed_password="hash",
+        status=AdminStatus.INACTIVE,
+    )
+    with patch.object(
+        auth_service.auth_repository,
+        "get_admin_by_email",
+        new=AsyncMock(return_value=admin),
+    ):
+        await auth_service.generate_otp(GenerateOtpRequest(email="admin@example.com"))
+
+
+async def test_generate_otp_returns_for_active_admin() -> None:
+    admin = PlatformAdmin(
+        id=uuid.uuid4(),
+        username="admin",
+        email="admin@example.com",
+        hashed_password="hash",
+        status=AdminStatus.ACTIVE,
+    )
+    with patch.object(
+        auth_service.auth_repository,
+        "get_admin_by_email",
+        new=AsyncMock(return_value=admin),
+    ):
+        await auth_service.generate_otp(GenerateOtpRequest(email="admin@example.com"))
+
+
+async def test_verify_otp_accepts_correct_otp() -> None:
+    admin = PlatformAdmin(
+        id=uuid.uuid4(), username="admin", email="admin@example.com", hashed_password="hash"
+    )
+    with patch.object(
+        auth_service.auth_repository,
+        "get_admin_by_email",
+        new=AsyncMock(return_value=admin),
+    ):
+        await auth_service.verify_otp(VerifyOtpRequest(email="admin@example.com", otp="12345"))
+
+
+async def test_verify_otp_rejects_wrong_otp() -> None:
+    admin = PlatformAdmin(
+        id=uuid.uuid4(), username="admin", email="admin@example.com", hashed_password="hash"
+    )
+    with patch.object(
+        auth_service.auth_repository,
+        "get_admin_by_email",
+        new=AsyncMock(return_value=admin),
+    ):
+        with pytest.raises(ApiError) as exc_info:
+            await auth_service.verify_otp(VerifyOtpRequest(email="admin@example.com", otp="wrong"))
+    assert exc_info.value.code == "E_400_AUTH_INVALID_OTP"
+
+
+async def test_verify_otp_rejects_unknown_admin_without_revealing() -> None:
+    with patch.object(
+        auth_service.auth_repository,
+        "get_admin_by_email",
+        new=AsyncMock(return_value=None),
+    ):
+        with pytest.raises(ApiError) as exc_info:
+            await auth_service.verify_otp(VerifyOtpRequest(email="nope@example.com", otp="12345"))
+    assert exc_info.value.code == "E_400_AUTH_INVALID_OTP"
+
+
+async def test_update_password_rejects_unknown_admin_without_revealing() -> None:
+    with patch.object(
+        auth_service.auth_repository,
+        "get_admin_by_email",
+        new=AsyncMock(return_value=None),
+    ):
+        with pytest.raises(ApiError) as exc_info:
+            await auth_service.update_password(
+                UpdatePasswordRequest(
+                    email="nope@example.com",
+                    new_password="S3cureP@ss",
+                    confirm_password="S3cureP@ss",
+                )
+            )
+    assert exc_info.value.code == "E_400_AUTH_PASSWORD_RESET_FAILED"
+
+
+async def test_update_password_success() -> None:
+    admin = PlatformAdmin(
+        id=uuid.uuid4(), username="admin", email="admin@example.com", hashed_password="hash"
+    )
+    with (
+        patch.object(
+            auth_service.auth_repository,
+            "get_admin_by_email",
+            new=AsyncMock(return_value=admin),
+        ),
+        patch.object(auth_service, "hash_password", return_value="hashed"),
+        patch.object(
+            auth_service.auth_repository,
+            "update_admin_password",
+            new=AsyncMock(return_value=admin),
+        ),
+    ):
+        result = await auth_service.update_password(
+            UpdatePasswordRequest(
+                email="admin@example.com",
+                new_password="S3cureP@ss",
+                confirm_password="S3cureP@ss",
+            )
+        )
+    assert result is admin
