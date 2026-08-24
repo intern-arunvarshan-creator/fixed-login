@@ -15,7 +15,10 @@ class AuditAction(StrEnum):
     LOGIN_SUCCESS = "auth.login.success"
     LOGIN_FAILURE = "auth.login.failure"
     LOGOUT = "auth.logout"
-    PASSWORD_RESET_SUCCESS = "auth.password_reset.success"  # noqa: S105
+    OTP_REQUESTED = "auth.password_reset.otp_requested"  # noqa: S105
+    OTP_VERIFY_SUCCESS = "auth.password_reset.otp_verify_success"  # noqa: S105
+    OTP_VERIFY_FAILURE = "auth.password_reset.otp_verify_failure"  # noqa: S105
+    PASSWORD_RESET_SUCCESS = "auth.password_reset.success"  # noqa: S105  # nosec B105
     USER_CREATE = "user.create"
     USER_UPDATE = "user.update"
     USER_REPLACE = "user.replace"
@@ -48,6 +51,9 @@ class AuditActionFilter(StrEnum):
     LOGIN_SUCCESS = AuditAction.LOGIN_SUCCESS.value
     LOGIN_FAILURE = AuditAction.LOGIN_FAILURE.value
     LOGOUT = AuditAction.LOGOUT.value
+    OTP_REQUESTED = AuditAction.OTP_REQUESTED.value
+    OTP_VERIFY_SUCCESS = AuditAction.OTP_VERIFY_SUCCESS.value
+    OTP_VERIFY_FAILURE = AuditAction.OTP_VERIFY_FAILURE.value
     PASSWORD_RESET_SUCCESS = AuditAction.PASSWORD_RESET_SUCCESS.value
     USER_CREATE = AuditAction.USER_CREATE.value
     USER_UPDATE = AuditAction.USER_UPDATE.value

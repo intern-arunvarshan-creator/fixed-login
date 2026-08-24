@@ -47,8 +47,9 @@ async def login(
     except ApiError:
         await _audit_login(request=request, credentials=credentials, success=False)
         raise
-    await _audit_login(request=request, credentials=credentials, success=True)
-    return ApiResponse(code=CODE_LOGIN_OK, message=MSG_LOGIN_OK, data=token)
+    resp = ApiResponse[TokenResponse](code=CODE_LOGIN_OK, message=MSG_LOGIN_OK, data=token)
+    await _audit_login(request=request, credentials=credentials, success=True, response=resp)
+    return resp
 
 
 @router.post(
@@ -67,10 +68,20 @@ async def refresh(payload: RefreshRequest) -> ApiResponse[TokenResponse]:
     response_model=ApiResponse[None],
     summary="Request a password reset OTP",
 )
-async def generate_otp(payload: GenerateOtpRequest) -> ApiResponse[None]:
+async def generate_otp(payload: GenerateOtpRequest, request: Request) -> ApiResponse[None]:
     """Validate that the admin account exists and is active before an OTP is issued."""
     await auth_service.generate_otp(payload)
-    return ApiResponse(code=CODE_OTP_SENT, message=MSG_OTP_SENT, data=None)
+    resp = ApiResponse[None](code=CODE_OTP_SENT, message=MSG_OTP_SENT, data=None)
+    await record_audit(
+        request=request,
+        actor=payload.email,
+        action=AuditAction.OTP_REQUESTED,
+        resource_type=AuditResourceType.AUTH,
+        resource_id=payload.email,
+        payload=payload.model_dump(mode="json"),
+        response=resp.model_dump(mode="json"),
+    )
+    return resp
 
 
 @router.post(
@@ -78,10 +89,16 @@ async def generate_otp(payload: GenerateOtpRequest) -> ApiResponse[None]:
     response_model=ApiResponse[None],
     summary="Verify the password reset OTP",
 )
-async def verify_otp(payload: VerifyOtpRequest) -> ApiResponse[None]:
+async def verify_otp(payload: VerifyOtpRequest, request: Request) -> ApiResponse[None]:
     """Verify the OTP sent for the given email."""
-    await auth_service.verify_otp(payload)
-    return ApiResponse(code=CODE_OTP_VERIFIED, message=MSG_OTP_VERIFIED, data=None)
+    try:
+        await auth_service.verify_otp(payload)
+    except ApiError:
+        await _audit_verify_otp(request=request, payload=payload, success=False)
+        raise
+    resp = ApiResponse[None](code=CODE_OTP_VERIFIED, message=MSG_OTP_VERIFIED, data=None)
+    await _audit_verify_otp(request=request, payload=payload, success=True, response=resp)
+    return resp
 
 
 @router.post(
@@ -92,14 +109,17 @@ async def verify_otp(payload: VerifyOtpRequest) -> ApiResponse[None]:
 async def update_password(payload: UpdatePasswordRequest, request: Request) -> ApiResponse[None]:
     """Set a new password for the admin identified by email."""
     admin = await auth_service.update_password(payload)
+    resp = ApiResponse[None](code=CODE_PASSWORD_UPDATED, message=MSG_PASSWORD_UPDATED, data=None)
     await record_audit(
         request=request,
         actor=admin.username,
         action=AuditAction.PASSWORD_RESET_SUCCESS,
         resource_type=AuditResourceType.AUTH,
         resource_id=admin.email,
+        payload=payload.model_dump(mode="json"),
+        response=resp.model_dump(mode="json"),
     )
-    return ApiResponse(code=CODE_PASSWORD_UPDATED, message=MSG_PASSWORD_UPDATED, data=None)
+    return resp
 
 
 @router.post(
@@ -116,21 +136,47 @@ async def logout(
     if credentials is None:
         raise not_authenticated()
     await auth_service.logout(access_token=credentials.credentials)
+    resp = ApiResponse[None](code=CODE_LOGOUT_OK, message=MSG_LOGOUT_OK, data=None)
     await record_audit(
         request=request,
         actor=admin.username,
         action=AuditAction.LOGOUT,
         resource_type=AuditResourceType.AUTH,
         resource_id=admin.email,
+        response=resp.model_dump(mode="json"),
     )
-    return ApiResponse(code=CODE_LOGOUT_OK, message=MSG_LOGOUT_OK, data=None)
+    return resp
 
 
-async def _audit_login(request: Request, credentials: LoginRequest, success: bool) -> None:
+async def _audit_login(
+    request: Request,
+    credentials: LoginRequest,
+    success: bool,
+    response: ApiResponse[TokenResponse] | None = None,
+) -> None:
     await record_audit(
         request=request,
         actor=credentials.email,
         action=AuditAction.LOGIN_SUCCESS if success else AuditAction.LOGIN_FAILURE,
         resource_type=AuditResourceType.AUTH,
         resource_id=credentials.email,
+        payload=credentials.model_dump(mode="json"),
+        response=response.model_dump(mode="json") if response else None,
+    )
+
+
+async def _audit_verify_otp(
+    request: Request,
+    payload: VerifyOtpRequest,
+    success: bool,
+    response: ApiResponse[None] | None = None,
+) -> None:
+    await record_audit(
+        request=request,
+        actor=payload.email,
+        action=AuditAction.OTP_VERIFY_SUCCESS if success else AuditAction.OTP_VERIFY_FAILURE,
+        resource_type=AuditResourceType.AUTH,
+        resource_id=payload.email,
+        payload=payload.model_dump(mode="json"),
+        response=response.model_dump(mode="json") if response else None,
     )
