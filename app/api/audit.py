@@ -20,12 +20,7 @@ R = TypeVar("R")
 
 @dataclass
 class AuditContext:
-    """Values an ``@audit`` extractor can read.
-
-    ``body`` and ``result`` are ``Any`` because they are endpoint-specific DTOs
-    (the request body model and the handler's return value); each extractor knows
-    the concrete types of its own endpoint.
-    """
+    """Context passed to an ``@audit`` extractor (request, body, admin, result)."""
 
     request: Request
     args: dict[str, Any]
@@ -74,14 +69,7 @@ def audit(
     details: DetailsExtractor | None = None,
     failure_action: AuditAction | None = None,
 ) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
-    """Record one Audit Entry per handler call, deriving context from intent.
-
-    Auto-derived: ``actor`` (from the resolved ``admin`` parameter), request context,
-    ``payload`` (the request body model), and ``response`` (the return value).
-    ``resource_id`` and ``details`` are post-hoc/domain-specific, so they are
-    extractor callables. On an ``ApiError`` a second entry is recorded using
-    ``failure_action`` (when set) before the error is re-raised.
-    """
+    """Record one Audit Entry per handler call, derived from its signature."""
 
     def decorator(func: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R]]:
         @wraps(func)
@@ -168,12 +156,7 @@ async def _write_entry(
 
 
 def _inspect(args: dict[str, Any]) -> tuple[Request | None, Any, PlatformAdmin | None]:
-    """Find the Request and body model among resolved arguments; the admin is read by name.
-
-    The Current Admin is the ``admin`` parameter (declared via
-    ``Depends(get_current_admin)``), never discovered by scanning for a
-    ``PlatformAdmin`` type.
-    """
+    """Locate the request and body in args; the Current Admin is the ``admin`` parameter."""
     request: Request | None = None
     body: Any = None
     for value in args.values():
@@ -188,11 +171,7 @@ def _inspect(args: dict[str, Any]) -> tuple[Request | None, Any, PlatformAdmin |
 
 
 def _dump_model(value: Any, *, exclude_unset: bool = False) -> dict[str, Any] | None:
-    """Serialize a pydantic model to a JSON-safe dict.
-
-    ``exclude_unset`` records only the fields the client sent (request bodies);
-    responses are dumped in full.
-    """
+    """Serialize a pydantic model to a JSON-safe dict (``exclude_unset`` for request bodies)."""
     if isinstance(value, BaseModel):
         return value.model_dump(mode="json", exclude_unset=exclude_unset)
     return None

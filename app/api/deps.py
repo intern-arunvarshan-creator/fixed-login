@@ -38,12 +38,7 @@ async def get_current_admin(
 def require_permission(
     required: PermissionName,
 ) -> Callable[..., Awaitable[None]]:
-    """Build a guard that allows the request only if the admin holds ``required``.
-
-    Returns ``None``: this is an authorization gate, not an identity provider.
-    Identity comes from ``get_current_admin``, which routes declare explicitly
-    whenever they need the Current Admin (e.g. for the audit actor).
-    """
+    """Dependency allowing the request only if the Current Admin holds ``required``."""
 
     async def _dependency(
         request: Request,

@@ -120,11 +120,7 @@ async def logout(access_token: str) -> None:
 
 @traced("auth_service.generate_otp")
 async def generate_otp(payload: GenerateOtpRequest) -> None:
-    """Request an OTP without revealing whether the account exists or is active.
-
-    Unknown or inactive accounts return normally (no OTP is issued) so callers
-    cannot enumerate registered admin emails from the response.
-    """
+    """Request an OTP, returning normally for unknown/inactive accounts to avoid enumeration."""
     admin = await auth_repository.get_admin_by_email(payload.email)
     if admin is None or admin.status != AdminStatus.ACTIVE:
         return

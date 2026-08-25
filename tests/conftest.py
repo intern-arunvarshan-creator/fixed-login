@@ -1,11 +1,4 @@
-"""Pytest configuration and shared fixtures.
-
-Environment variables are set here *before* any ``app.*`` import. This matters
-because ``app.core.config`` instantiates ``Settings()`` at import time, and
-``database_url`` / ``secret_key`` are required (no defaults). Injecting test
-values here keeps the suite independent of a developer's local ``.env`` and of
-CI secrets.
-"""
+"""Pytest configuration and shared fixtures (env vars set before any app import)."""
 
 import os
 

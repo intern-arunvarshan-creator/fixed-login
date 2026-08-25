@@ -48,12 +48,7 @@ def create_refresh_token(subject: str) -> str:
 
 
 def create_access_token(subject: str, refresh_token: str) -> str:
-    """Create an access token carrying its sibling refresh token's jti/exp.
-
-    Logout only ever sees the access token (the bearer header); embedding the
-    refresh token's identity here lets it revoke both without the client
-    having to resend the refresh token.
-    """
+    """Create an access token carrying its sibling refresh token's jti/exp."""
     refresh_payload = decode_token(refresh_token)
     extra_claims = {"rjti": refresh_payload["jti"], "rexp": refresh_payload["exp"]}
     return _create_token(
