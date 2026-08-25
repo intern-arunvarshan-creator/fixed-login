@@ -32,6 +32,7 @@ from app.schemas.auth import (
     UpdatePasswordRequest,
     VerifyOtpRequest,
 )
+from app.services import rbac_service
 
 # Hardcoded until real OTP delivery (email/SMS) is wired up.
 OTP_CODE = "12345"  # noqa: S105  # nosec B105  (fixed OTP, not a real secret)
@@ -46,13 +47,16 @@ async def login(credentials: LoginRequest) -> TokenResponse:
         raise invalid_credentials()
     if admin.status != AdminStatus.ACTIVE:
         raise account_inactive()
-    return _issue_tokens(str(admin.id))
+    permissions = await rbac_service.permissions_for_admin(admin.id)
+    return _issue_tokens(str(admin.id), permissions=sorted(permissions))
 
 
-def _issue_tokens(subject: str) -> TokenResponse:
+def _issue_tokens(subject: str, permissions: list[str]) -> TokenResponse:
     refresh_token = create_refresh_token(subject)
     return TokenResponse(
-        access_token=create_access_token(subject, refresh_token=refresh_token),
+        access_token=create_access_token(
+            subject, refresh_token=refresh_token, permissions=permissions
+        ),
         refresh_token=refresh_token,
     )
 
@@ -86,7 +90,8 @@ async def refresh(payload: RefreshRequest) -> TokenResponse:
     if data.get("type") != "refresh":
         raise not_authenticated()
     admin = await get_admin_from_payload(data)
-    return _issue_tokens(str(admin.id))
+    permissions = await rbac_service.permissions_for_admin(admin.id)
+    return _issue_tokens(str(admin.id), permissions=sorted(permissions))
 
 
 def _epoch_to_naive_utc(timestamp: int) -> datetime:
