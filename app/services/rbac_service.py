@@ -20,3 +20,8 @@ def _expand(grants: set[tuple[str, bool, bool]]) -> set[str]:
         if write:
             permissions.add(f"{code}.W")
     return permissions
+
+
+@traced("rbac_service.roles_for_admin")
+async def roles_for_admin(admin_id: uuid.UUID) -> set[str]:
+    return await rbac_repository.role_names_for_admin(admin_id)

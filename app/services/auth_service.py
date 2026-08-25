@@ -48,14 +48,21 @@ async def login(credentials: LoginRequest) -> TokenResponse:
     if admin.status != AdminStatus.ACTIVE:
         raise account_inactive()
     permissions = await rbac_service.permissions_for_admin(admin.id)
-    return _issue_tokens(str(admin.id), permissions=sorted(permissions))
+    return await _issue_tokens(admin, permissions=sorted(permissions))
 
 
-def _issue_tokens(subject: str, permissions: list[str]) -> TokenResponse:
+async def _issue_tokens(admin: PlatformAdmin, permissions: list[str]) -> TokenResponse:
+    roles = sorted(await rbac_service.roles_for_admin(admin.id))
+    subject = str(admin.id)
     refresh_token = create_refresh_token(subject)
     return TokenResponse(
         access_token=create_access_token(
-            subject, refresh_token=refresh_token, permissions=permissions
+            subject,
+            refresh_token=refresh_token,
+            permissions=permissions,
+            email=admin.email,
+            username=admin.username,
+            roles=roles,
         ),
         refresh_token=refresh_token,
     )
@@ -91,7 +98,7 @@ async def refresh(payload: RefreshRequest) -> TokenResponse:
         raise not_authenticated()
     admin = await get_admin_from_payload(data)
     permissions = await rbac_service.permissions_for_admin(admin.id)
-    return _issue_tokens(str(admin.id), permissions=sorted(permissions))
+    return await _issue_tokens(admin, permissions=sorted(permissions))
 
 
 def _epoch_to_naive_utc(timestamp: int) -> datetime:
