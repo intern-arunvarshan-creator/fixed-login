@@ -3,7 +3,7 @@ from pydantic import BaseModel, EmailStr, Field, model_validator
 from app.schemas.user import PasswordStr
 
 CODE_LOGIN_OK = "S_200_AUTH_LOGIN_OK"
-MSG_LOGIN_OK = "Login successful"
+MSG_LOGIN_OK = "Logged in successfully"
 CODE_REFRESH_OK = "S_200_AUTH_REFRESH_OK"
 MSG_REFRESH_OK = "Token refreshed"
 CODE_OTP_SENT = "S_200_AUTH_OTP_SENT"

@@ -9,7 +9,7 @@ import uuid
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import col
+from sqlmodel import SQLModel, col
 
 from app.database.database import async_session_factory
 from app.models.enums import PermissionName
@@ -24,15 +24,15 @@ SUPER_ADMIN_ROLE_NAME = "super_admin"
 
 async def ensure_catalog(db: AsyncSession) -> None:
     """Upsert the super_admin role, every known permission, and super_admin's grants."""
-    role = await _get_or_create_role(db, SUPER_ADMIN_ROLE_NAME)
+    role = await _get_or_create(db, Role, SUPER_ADMIN_ROLE_NAME)
     for permission_name in PermissionName:
-        await _get_or_create_permission(db, permission_name.value)
+        await _get_or_create(db, Permission, permission_name.value)
     await _grant_all_permissions(db, role.id)
 
 
 async def assign_super_admin(db: AsyncSession, admin_id: uuid.UUID) -> None:
     """Ensure the given admin holds the super_admin role (no-op if already assigned)."""
-    role = await _get_or_create_role(db, SUPER_ADMIN_ROLE_NAME)
+    role = await _get_or_create(db, Role, SUPER_ADMIN_ROLE_NAME)
     existing = await db.execute(
         select(PlatformAdminRole).where(
             col(PlatformAdminRole.platform_admin_id) == admin_id,
@@ -54,24 +54,17 @@ async def seed() -> None:
     print("RBAC catalog and super_admin assignments are ready.")
 
 
-async def _get_or_create_role(db: AsyncSession, name: str) -> Role:
-    role = (await db.execute(select(Role).where(col(Role.name) == name))).scalar_one_or_none()
-    if role is None:
-        role = Role(name=name)
-        db.add(role)
+async def _get_or_create[T: SQLModel](db: AsyncSession, model: type[T], name: str) -> T:
+    """Return the row with ``name``, creating (and flushing) it if absent."""
+    # ``model`` is a generic SQLModel type, so the column is fetched by name
+    # (ruff B009 prefers attribute access, which mypy rejects on ``type[T]``).
+    name_column = getattr(model, "name")  # noqa: B009
+    row = (await db.execute(select(model).where(col(name_column) == name))).scalar_one_or_none()
+    if row is None:
+        row = model(name=name)
+        db.add(row)
         await db.flush()
-    return role
-
-
-async def _get_or_create_permission(db: AsyncSession, name: str) -> Permission:
-    permission = (
-        await db.execute(select(Permission).where(col(Permission.name) == name))
-    ).scalar_one_or_none()
-    if permission is None:
-        permission = Permission(name=name)
-        db.add(permission)
-        await db.flush()
-    return permission
+    return row
 
 
 async def _grant_all_permissions(db: AsyncSession, role_id: uuid.UUID) -> None:

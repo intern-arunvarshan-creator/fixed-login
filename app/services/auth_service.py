@@ -16,10 +16,10 @@ from app.core.security import (
 from app.core.tracing import traced
 from app.exceptions.errors import (
     account_inactive,
-    admin_not_found,
     invalid_credentials,
     invalid_otp,
     not_authenticated,
+    password_reset_failed,
 )
 from app.models.enums import AdminStatus
 from app.models.platform_admin import PlatformAdmin
@@ -118,30 +118,32 @@ async def logout(access_token: str) -> None:
         )
 
 
-async def _get_active_admin_by_email(email: str) -> PlatformAdmin:
-    admin = await auth_repository.get_admin_by_email(email)
-    if admin is None:
-        raise admin_not_found()
-    if admin.status != AdminStatus.ACTIVE:
-        raise account_inactive()
-    return admin
-
-
 @traced("auth_service.generate_otp")
 async def generate_otp(payload: GenerateOtpRequest) -> None:
-    await _get_active_admin_by_email(payload.email)
+    """Request an OTP without revealing whether the account exists or is active.
+
+    Unknown or inactive accounts return normally (no OTP is issued) so callers
+    cannot enumerate registered admin emails from the response.
+    """
+    admin = await auth_repository.get_admin_by_email(payload.email)
+    if admin is None or admin.status != AdminStatus.ACTIVE:
+        return
 
 
 @traced("auth_service.verify_otp")
 async def verify_otp(payload: VerifyOtpRequest) -> None:
-    await _get_active_admin_by_email(payload.email)
-    if payload.otp != OTP_CODE:
+    """Verify the OTP, returning one opaque failure for any invalid case."""
+    admin = await auth_repository.get_admin_by_email(payload.email)
+    if admin is None or admin.status != AdminStatus.ACTIVE or payload.otp != OTP_CODE:
         raise invalid_otp()
 
 
 @traced("auth_service.update_password")
 async def update_password(payload: UpdatePasswordRequest) -> PlatformAdmin:
-    admin = await _get_active_admin_by_email(payload.email)
+    """Set a new password, failing opaquely for unknown or inactive accounts."""
+    admin = await auth_repository.get_admin_by_email(payload.email)
+    if admin is None or admin.status != AdminStatus.ACTIVE:
+        raise password_reset_failed()
     return await auth_repository.update_admin_password(
         admin=admin, hashed_password=hash_password(payload.new_password)
     )

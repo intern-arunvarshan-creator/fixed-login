@@ -80,10 +80,10 @@ platform-admin/
 │   │       └── seed_rbac.py    # seed RBAC catalog + backfill super_admin (idempotent)
 │   ├── api/
 │   │   ├── deps.py             # auth + permission deps (get_current_admin, require_permission)
-│   │   ├── audit.py            # request → audit-context helper
+│   │   ├── audit.py            # @audit decorator + request-context helper
 │   │   └── v1/
-│   │       ├── health.py       # GET /health
-│   │       ├── auth.py         # POST /api/v1/auth/login + /refresh
+│   │       ├── health.py       # GET /api/v1/health
+│   │       ├── auth.py         # auth routes (login, refresh, OTP, password reset, logout)
 │   │       ├── users.py        # user CRUD routes
 │   │       └── audit_logs.py   # GET /api/v1/audit-logs
 │   ├── core/
@@ -119,9 +119,9 @@ platform-admin/
 │   │   ├── auth.py             # auth DTOs + result codes
 │   │   ├── user.py             # user DTOs + password policy + result codes
 │   │   ├── audit.py            # audit DTOs + result codes
-│   │   └── health.py           # health result codes
+│   │   └── health.py           # health DTO + result codes
 │   ├── services/
-│   │   ├── auth_service.py     # login + admin resolution (rejects inactive)
+│   │   ├── auth_service.py     # login, refresh, password reset, admin resolution
 │   │   ├── health_service.py   # service health check
 │   │   ├── user_service.py     # user business rules
 │   │   ├── rbac_service.py     # effective permissions business rule

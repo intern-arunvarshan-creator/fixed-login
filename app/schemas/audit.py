@@ -4,8 +4,6 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 
-from app.schemas.common import Pagination
-
 CODE_LISTED = "S_200_AUDIT_LIST_OK"
 MSG_LISTED = "Audit logs fetched successfully"
 
@@ -26,8 +24,3 @@ class AuditLogRead(BaseModel):
     ip_address: str | None
     user_agent: str | None
     created_at: datetime
-
-
-class AuditLogListData(BaseModel):
-    data: list[AuditLogRead]
-    pagination: Pagination

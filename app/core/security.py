@@ -12,14 +12,17 @@ from app.core.config import settings
 _BCRYPT_MAX_BYTES = 72
 
 
+def _truncate(password: str) -> bytes:
+    """Encode and truncate to bcrypt's 72-byte limit."""
+    return password.encode("utf-8")[:_BCRYPT_MAX_BYTES]
+
+
 def hash_password(password: str) -> str:
-    truncated = password.encode("utf-8")[:_BCRYPT_MAX_BYTES]
-    return bcrypt.hashpw(truncated, bcrypt.gensalt()).decode("utf-8")
+    return bcrypt.hashpw(_truncate(password), bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    truncated = plain.encode("utf-8")[:_BCRYPT_MAX_BYTES]
-    return bcrypt.checkpw(truncated, hashed.encode("utf-8"))
+    return bcrypt.checkpw(_truncate(plain), hashed.encode("utf-8"))
 
 
 def _create_token(

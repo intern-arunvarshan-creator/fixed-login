@@ -13,6 +13,7 @@ from app.exceptions.errors import (
     email_already_registered,
     validation_failed,
 )
+from app.schemas.common import ApiResponse
 
 logger = logging.getLogger("app.exceptions")
 
@@ -21,10 +22,8 @@ PYDANTIC_VALUE_ERROR_PREFIX = "Value error, "
 
 
 def _envelope(code: str, message: str, data: Any = None, status_code: int = 200) -> JSONResponse:
-    return JSONResponse(
-        status_code=status_code,
-        content={"code": code, "message": message, "data": data},
-    )
+    envelope = ApiResponse[Any](code=code, message=message, data=data)
+    return JSONResponse(status_code=status_code, content=envelope.model_dump(mode="json"))
 
 
 def register_exception_handlers(app: FastAPI) -> None:
