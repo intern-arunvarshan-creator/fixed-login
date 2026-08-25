@@ -19,7 +19,7 @@ services/     business rules (validation, uniqueness, password hashing, tokens)
 repositories/ the ONLY layer that writes SQL — one repository per model
    │
    ▼
-models/       SQLModel tables (User, PlatformAdmin, AuditLog, Role, Permission) + enums
+models/       SQLModel tables (User, PlatformAdmin, AuditLog, Role, Screen) + enums
 ```
 
 Supporting modules around that core:
@@ -76,7 +76,7 @@ platform-admin/
 │   │   ├── database.py         # async engine, session factory, get_db dependency
 │   │   ├── session.py          # request-scoped session holder (get_session)
 │   │   └── scripts/
-│   │       ├── seed_admin.py   # create/reset a Platform Admin + assign super_admin
+│   │       ├── seed_admin.py   # create/reset a Platform Admin + seed catalog + assign super_admin
 │   │       └── seed_rbac.py    # seed RBAC catalog + backfill super_admin (idempotent)
 │   ├── api/
 │   │   ├── deps.py             # auth + permission deps (get_current_admin, require_permission)
@@ -104,8 +104,8 @@ platform-admin/
 │   │   ├── user.py             # users table
 │   │   ├── platform_admin.py   # platform_admins table
 │   │   ├── role.py             # roles table
-│   │   ├── permission.py       # permissions table
-│   │   ├── role_permission.py  # role → permission grants
+│   │   ├── screen.py           # screens table
+│   │   ├── role_permission.py  # role → screen read/write grants
 │   │   ├── platform_admin_role.py  # admin → role assignments
 │   │   └── audit_log.py        # audit_logs table
 │   ├── repositories/
@@ -149,13 +149,66 @@ platform-admin/
 
 ## Run
 
+### 1. Prerequisites
+
+- Python 3.12 (see `.python-version`)
+- PostgreSQL running with a database created (e.g. `platform_admin_v2`)
+- `uv` installed
+
+### 2. Configure
+
+Copy `.env.example` to `.env` and fill in the two required values:
+
+```bash
+cp .env.example .env
+```
+
+- `DATABASE_URL` — e.g. `postgresql+asyncpg://postgres:postgres@localhost:5432/platform_admin_v2`
+- `SECRET_KEY` — any long random string (used to sign JWTs)
+
+### 3. Install dependencies
+
 ```bash
 uv sync
-uv run python -m alembic upgrade head
-uv run python app/database/scripts/seed_admin.py   # default: admin@gmail.com / Admin@1234 → super_admin
-uv run python app/database/scripts/seed_rbac.py    # optional: backfills super_admin to other existing admins
+```
+
+### 4. Apply migrations
+
+```bash
+uv run alembic upgrade head
+```
+
+### 5. Seed data
+
+Create (or reset) the admin account, seed the RBAC catalog (screens + `super_admin` grants),
+and assign `super_admin` — all idempotent:
+
+```bash
+uv run python app/database/scripts/seed_admin.py
+# defaults: admin@gmail.com / Admin@1234
+```
+
+Or override the defaults:
+
+```bash
+uv run python app/database/scripts/seed_admin.py --username admin --email admin@gmail.com --password 'Admin@1234'
+```
+
+Optionally backfill `super_admin` onto any other existing admins that have no roles
+(idempotent):
+
+```bash
+uv run python app/database/scripts/seed_rbac.py
+```
+
+### 6. Run the app
+
+```bash
 uv run app
 ```
+
+Server starts at `http://127.0.0.1:8000`. Sanity-check `GET /api/v1/health`, then log in at
+`POST /api/v1/auth/login` with `admin@gmail.com` / `Admin@1234`.
 
 See `docs/api.md` for the full walkthrough.
 

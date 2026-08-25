@@ -50,12 +50,14 @@ def create_refresh_token(subject: str) -> str:
 def create_access_token(
     subject: str,
     refresh_token: str,
+    permissions: list[str],
     *,
     email: str,
     username: str,
     roles: list[str],
 ) -> str:
-    """Create an access token carrying its sibling refresh token's jti/exp plus identity claims."""
+    """Create an access token carrying its sibling refresh token's
+    jti/exp and permissions plus identity claims."""
     refresh_payload = decode_token(refresh_token)
     extra_claims = {
         "rjti": refresh_payload["jti"],
@@ -63,6 +65,7 @@ def create_access_token(
         "email": email,
         "username": username,
         "roles": roles,
+        "permissions": permissions,
     }
     return _create_token(
         subject,
