@@ -1,3 +1,6 @@
+from collections.abc import Iterable
+from typing import Any
+
 from pydantic import BaseModel
 
 from app.utils.pagination import total_pages
@@ -29,3 +32,18 @@ class Pagination(BaseModel):
 class ListData[T](BaseModel):
     data: list[T]
     pagination: Pagination
+
+
+def build_list_data[T: BaseModel](
+    schema: type[T],
+    entities: Iterable[Any],
+    *,
+    page: int,
+    limit: int,
+    total: int,
+) -> ListData[T]:
+    """Validate ``entities`` into a ``ListData`` with computed pagination."""
+    return ListData(
+        data=[schema.model_validate(e) for e in entities],
+        pagination=Pagination.from_total(page=page, limit=limit, total_items=total),
+    )

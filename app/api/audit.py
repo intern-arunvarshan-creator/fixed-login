@@ -76,7 +76,7 @@ def audit(
 ) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
     """Record one Audit Entry per handler call, deriving context from intent.
 
-    Auto-derived: ``actor`` (from a ``PlatformAdmin`` argument), request context,
+    Auto-derived: ``actor`` (from the resolved ``admin`` parameter), request context,
     ``payload`` (the request body model), and ``response`` (the return value).
     ``resource_id`` and ``details`` are post-hoc/domain-specific, so they are
     extractor callables. On an ``ApiError`` a second entry is recorded using
@@ -109,7 +109,7 @@ def audit(
                 resource_type=resource_type,
                 resource_id=_call(resource_id, ctx),
                 details=_call(details, ctx),
-                response=_dump_response(result),
+                response=_dump_model(result),
             )
             return result
 
@@ -128,9 +128,9 @@ def _build_context(kwargs: Mapping[str, Any]) -> AuditContext:
 
 
 def _resolve_actor(ctx: AuditContext, actor: ActorExtractor | None) -> str | None:
-    """Prefer the resolved admin's username; fall back to the declared extractor."""
+    """Prefer the resolved admin's Login Email; fall back to the declared extractor."""
     if ctx.admin is not None:
-        return ctx.admin.username
+        return ctx.admin.email
     return _call(actor, ctx)
 
 
@@ -162,35 +162,37 @@ async def _write_entry(
         resource_type=resource_type,
         resource_id=resource_id,
         details=details,
-        payload=_dump_body(ctx.body),
+        payload=_dump_model(ctx.body, exclude_unset=True),
         response=response,
     )
 
 
 def _inspect(args: dict[str, Any]) -> tuple[Request | None, Any, PlatformAdmin | None]:
-    """Find the Request, body model, and PlatformAdmin among resolved arguments."""
+    """Find the Request and body model among resolved arguments; the admin is read by name.
+
+    The Current Admin is the ``admin`` parameter (declared via
+    ``Depends(get_current_admin)``), never discovered by scanning for a
+    ``PlatformAdmin`` type.
+    """
     request: Request | None = None
     body: Any = None
-    admin: PlatformAdmin | None = None
     for value in args.values():
         if isinstance(value, Request):
             request = value
-        elif isinstance(value, PlatformAdmin):
-            admin = value
         elif isinstance(value, BaseModel):
             body = value
+    admin = args.get("admin")
+    if not isinstance(admin, PlatformAdmin):
+        admin = None
     return request, body, admin
 
 
-def _dump_body(body: Any) -> dict[str, Any] | None:
-    """Serialize the request body model, capturing only fields the client sent."""
-    if isinstance(body, BaseModel):
-        return body.model_dump(mode="json", exclude_unset=True)
-    return None
+def _dump_model(value: Any, *, exclude_unset: bool = False) -> dict[str, Any] | None:
+    """Serialize a pydantic model to a JSON-safe dict.
 
-
-def _dump_response(result: Any) -> dict[str, Any] | None:
-    """Serialize the handler's return value if it is a pydantic model."""
-    if isinstance(result, BaseModel):
-        return result.model_dump(mode="json")
+    ``exclude_unset`` records only the fields the client sent (request bodies);
+    responses are dumped in full.
+    """
+    if isinstance(value, BaseModel):
+        return value.model_dump(mode="json", exclude_unset=exclude_unset)
     return None
