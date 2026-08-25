@@ -47,10 +47,23 @@ def create_refresh_token(subject: str) -> str:
     return _create_token(subject, "refresh", timedelta(days=settings.refresh_token_expire_days))
 
 
-def create_access_token(subject: str, refresh_token: str) -> str:
-    """Create an access token carrying its sibling refresh token's jti/exp."""
+def create_access_token(
+    subject: str,
+    refresh_token: str,
+    *,
+    email: str,
+    username: str,
+    roles: list[str],
+) -> str:
+    """Create an access token carrying its sibling refresh token's jti/exp plus identity claims."""
     refresh_payload = decode_token(refresh_token)
-    extra_claims = {"rjti": refresh_payload["jti"], "rexp": refresh_payload["exp"]}
+    extra_claims = {
+        "rjti": refresh_payload["jti"],
+        "rexp": refresh_payload["exp"],
+        "email": email,
+        "username": username,
+        "roles": roles,
+    }
     return _create_token(
         subject,
         "access",

@@ -36,6 +36,11 @@ async def test_login_success() -> None:
         patch.object(auth_service, "verify_password", return_value=True),
         patch.object(auth_service, "create_access_token", return_value="access"),
         patch.object(auth_service, "create_refresh_token", return_value="refresh"),
+        patch.object(
+            auth_service.rbac_service,
+            "roles_for_admin",
+            new=AsyncMock(return_value={"super_admin"}),
+        ),
     ):
         token = await auth_service.login(LoginRequest(email="admin@example.com", password="pw"))
     assert token.access_token == "access"
@@ -88,6 +93,11 @@ async def test_refresh_success() -> None:
         ),
         patch.object(auth_service, "create_access_token", return_value="access"),
         patch.object(auth_service, "create_refresh_token", return_value="refresh"),
+        patch.object(
+            auth_service.rbac_service,
+            "roles_for_admin",
+            new=AsyncMock(return_value={"super_admin"}),
+        ),
     ):
         token = await auth_service.refresh(RefreshRequest(refresh_token="r"))
     assert token.access_token == "access"
