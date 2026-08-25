@@ -1,8 +1,4 @@
-"""Seed the RBAC catalog and backfill super_admin (idempotent).
-
-Usage:
-    uv run python app/database/scripts/seed_rbac.py
-"""
+"""Seed the RBAC catalog and backfill super_admin (idempotent)."""
 
 import asyncio
 import uuid

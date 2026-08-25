@@ -1,12 +1,4 @@
-"""Create (or reset) a Platform Admin — defaults to admin@gmail.com / Admin@1234.
-
-Usage (dev defaults):
-    uv run python app/database/scripts/seed_admin.py
-
-Override:
-    uv run python app/database/scripts/seed_admin.py \\
-        --username admin --email admin@gmail.com --password 'Admin@1234'
-"""
+"""Create or reset a Platform Admin (defaults to admin@gmail.com / Admin@1234)."""
 
 import argparse
 import asyncio

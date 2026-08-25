@@ -21,13 +21,7 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    """Upgrade schema.
-
-    platform_admins moves from a username-keyed table to an id-keyed one with
-    email/status/timestamps, and login switches from username to email. There's
-    no safe way to backfill email/status for pre-existing rows, so the table is
-    dropped and recreated — re-seed with `app/database/scripts/seed_admin.py` afterward.
-    """
+    """Rebuild ``platform_admins`` keyed by id with email/status — re-seed afterward."""
     op.drop_table("platform_admins")
     op.create_table(
         "platform_admins",
