@@ -37,14 +37,11 @@ class AuditResourceType(StrEnum):
 
 
 class PermissionName(StrEnum):
-    """The fixed set of permissions routes can require (mirrors ``permissions`` table rows)."""
+    """The fixed set of permissions routes can require (written ``<screen>.<R|W>``)."""
 
-    USER_CREATE = "user.create"
-    USER_READ = "user.read"
-    USER_UPDATE = "user.update"
-    USER_REPLACE = "user.replace"
-    USER_DELETE = "user.delete"
-    AUDIT_READ = "audit.read"
+    USERS_READ = "S1.R"
+    USERS_WRITE = "S1.W"
+    AUDIT_READ = "S2.R"
 
 
 def enum_values(enum_cls: type[Enum]) -> list[str]:

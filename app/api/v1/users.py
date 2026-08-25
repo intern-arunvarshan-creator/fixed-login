@@ -55,7 +55,7 @@ async def create_user(
     data: UserCreate,
     request: Request,
     admin: PlatformAdmin = Depends(get_current_admin),
-    _: None = Depends(require_permission(PermissionName.USER_CREATE)),
+    _: None = Depends(require_permission(PermissionName.USERS_WRITE)),
 ) -> ApiResponse[UserRead]:
     """Create a new user with a name, email, and password."""
     user = await user_service.create_user(data)
@@ -68,7 +68,7 @@ async def list_users(
     limit: int = Query(DEFAULT_PAGE_SIZE, ge=MIN_PAGE_SIZE, le=MAX_PAGE_SIZE),
     search: str | None = Query(None, description="Search by name or email"),
     status: UserStatusFilter = Query(UserStatusFilter.ALL, description="Filter by user status"),
-    _: None = Depends(require_permission(PermissionName.USER_READ)),
+    _: None = Depends(require_permission(PermissionName.USERS_READ)),
 ) -> ApiResponse[ListData[UserRead]]:
     """List users, paginated and optionally filtered by search text or status."""
     users, total = await user_service.list_users(
@@ -87,7 +87,7 @@ async def list_users(
 @router.get("/{user_id}", response_model=ApiResponse[UserRead], summary="Get a user")
 async def get_user(
     user_id: uuid.UUID,
-    _: None = Depends(require_permission(PermissionName.USER_READ)),
+    _: None = Depends(require_permission(PermissionName.USERS_READ)),
 ) -> ApiResponse[UserRead]:
     """Fetch a single user by id."""
     user = await user_service.get_user(user_id)
@@ -106,7 +106,7 @@ async def replace_user(
     data: UserReplace,
     request: Request,
     admin: PlatformAdmin = Depends(get_current_admin),
-    _: None = Depends(require_permission(PermissionName.USER_REPLACE)),
+    _: None = Depends(require_permission(PermissionName.USERS_WRITE)),
 ) -> ApiResponse[UserRead]:
     """Replace a user's name, email, and password; status is left unchanged."""
     user = await user_service.replace_user(user_id=user_id, data=data)
@@ -125,7 +125,7 @@ async def update_user(
     data: UserUpdate,
     request: Request,
     admin: PlatformAdmin = Depends(get_current_admin),
-    _: None = Depends(require_permission(PermissionName.USER_UPDATE)),
+    _: None = Depends(require_permission(PermissionName.USERS_WRITE)),
 ) -> ApiResponse[UserRead]:
     """Partially update a user's name, email, or status."""
     user = await user_service.update_user(user_id=user_id, data=data)
@@ -142,7 +142,7 @@ async def delete_user(
     user_id: uuid.UUID,
     request: Request,
     admin: PlatformAdmin = Depends(get_current_admin),
-    _: None = Depends(require_permission(PermissionName.USER_DELETE)),
+    _: None = Depends(require_permission(PermissionName.USERS_WRITE)),
 ) -> ApiResponse[None]:
     """Delete a user by id."""
     await user_service.delete_user(user_id)

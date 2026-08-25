@@ -8,22 +8,26 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import SQLModel, col
 
 from app.database.database import async_session_factory
-from app.models.enums import PermissionName
-from app.models.permission import Permission
 from app.models.platform_admin import PlatformAdmin
 from app.models.platform_admin_role import PlatformAdminRole
 from app.models.role import Role
 from app.models.role_permission import RolePermission
+from app.models.screen import Screen
 
 SUPER_ADMIN_ROLE_NAME = "super_admin"
 
+SCREENS = [
+    ("S1", "User Management", 1, True, True),
+    ("S2", "Audit Logs", 2, True, False),
+]
+
 
 async def ensure_catalog(db: AsyncSession) -> None:
-    """Upsert the super_admin role, every known permission, and super_admin's grants."""
+    """Seed screens and grant super_admin every screen permission."""
     role = await _get_or_create(db, Role, SUPER_ADMIN_ROLE_NAME)
-    for permission_name in PermissionName:
-        await _get_or_create(db, Permission, permission_name.value)
-    await _grant_all_permissions(db, role.id)
+    for code, name, sort_order, read, write in SCREENS:
+        await _get_or_create_screen(db, code, name, sort_order)
+        await _get_or_create_grant(db, role.id, code, read=read, write=write)
 
 
 async def assign_super_admin(db: AsyncSession, admin_id: uuid.UUID) -> None:
@@ -63,17 +67,33 @@ async def _get_or_create[T: SQLModel](db: AsyncSession, model: type[T], name: st
     return row
 
 
-async def _grant_all_permissions(db: AsyncSession, role_id: uuid.UUID) -> None:
-    permissions = (await db.execute(select(Permission))).scalars().all()
-    for permission in permissions:
-        existing = await db.execute(
+async def _get_or_create_screen(db: AsyncSession, code: str, name: str, sort_order: int) -> Screen:
+    """Return the screen with ``code``, creating (and flushing) it if absent."""
+    row = (await db.execute(select(Screen).where(col(Screen.code) == code))).scalar_one_or_none()
+    if row is None:
+        row = Screen(code=code, name=name, sort_order=sort_order)
+        db.add(row)
+        await db.flush()
+    return row
+
+
+async def _get_or_create_grant(
+    db: AsyncSession, role_id: uuid.UUID, screen_code: str, *, read: bool, write: bool
+) -> RolePermission:
+    """Return the role's screen grant, creating (and flushing) it if absent."""
+    row = (
+        await db.execute(
             select(RolePermission).where(
                 col(RolePermission.role_id) == role_id,
-                col(RolePermission.permission_id) == permission.id,
+                col(RolePermission.screen_code) == screen_code,
             )
         )
-        if existing.scalar_one_or_none() is None:
-            db.add(RolePermission(role_id=role_id, permission_id=permission.id))
+    ).scalar_one_or_none()
+    if row is None:
+        row = RolePermission(role_id=role_id, screen_code=screen_code, read=read, write=write)
+        db.add(row)
+        await db.flush()
+    return row
 
 
 def main() -> None:

@@ -73,9 +73,12 @@ async def _record_denial(
     )
 
 
+_SCREEN_RESOURCE_TYPES = {
+    "S1": AuditResourceType.USER,
+    "S2": AuditResourceType.AUDIT,
+}
+
+
 def _denial_resource_type(permission: PermissionName) -> AuditResourceType | None:
-    """Map a permission's resource prefix (e.g. ``user``) to its resource type."""
-    try:
-        return AuditResourceType(permission.value.split(".", 1)[0])
-    except ValueError:
-        return None
+    """Map a permission's screen code to its audit resource type."""
+    return _SCREEN_RESOURCE_TYPES.get(permission.value.split(".", 1)[0])
