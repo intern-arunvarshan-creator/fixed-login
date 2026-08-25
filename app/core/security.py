@@ -33,7 +33,7 @@ def _create_token(
 ) -> str:
     now = datetime.now(UTC)
     payload: dict[str, Any] = {
-        "sub": subject,
+        "user_id": subject,
         "jti": str(uuid.uuid4()),
         "exp": now + expires_delta,
         "type": token_type,
