@@ -4,7 +4,7 @@ import uuid
 
 from app.core.constants import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
 from app.core.security import hash_password
-from app.exceptions.errors import email_already_registered, user_not_found
+from app.exceptions.exceptions import EmailExistsError, UserNotFoundError
 from app.models.enums import UserStatus
 from app.models.user import User
 from app.repositories import user_repository
@@ -17,7 +17,7 @@ async def _ensure_email_available(
 ) -> None:
     existing = await user_repository.get_user_by_email(email)
     if existing is not None and (exclude_id is None or existing.id != exclude_id):
-        raise email_already_registered()
+        raise EmailExistsError()
 
 
 async def create_user(data: UserCreate) -> User:
@@ -43,7 +43,7 @@ async def list_users(
 async def get_user(user_id: uuid.UUID) -> User:
     user = await user_repository.get_user(user_id)
     if user is None:
-        raise user_not_found()
+        raise UserNotFoundError()
     return user
 
 

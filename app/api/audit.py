@@ -8,7 +8,7 @@ from typing import Any, ParamSpec, TypeVar
 from fastapi import Request
 from pydantic import BaseModel
 
-from app.exceptions.errors import ApiError
+from app.exceptions.exceptions import AppError
 from app.models.enums import AuditAction, AuditResourceType
 from app.models.platform_admin import PlatformAdmin
 from app.services import audit_service
@@ -78,7 +78,7 @@ def audit(
             actor_value = _resolve_actor(ctx, actor)
             try:
                 result = await func(*args, **kwargs)
-            except ApiError as exc:
+            except AppError as exc:
                 if failure_action is not None:
                     await _write_entry(
                         ctx=ctx,

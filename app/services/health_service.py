@@ -2,7 +2,7 @@
 
 import logging
 
-from app.exceptions.errors import service_unavailable
+from app.exceptions.exceptions import ServiceUnavailableError
 from app.repositories import health_repository
 
 logger = logging.getLogger("app.services.health")
@@ -14,4 +14,4 @@ async def check() -> None:
         await health_repository.ping()
     except Exception:
         logger.exception("database health check failed")
-        raise service_unavailable() from None
+        raise ServiceUnavailableError() from None

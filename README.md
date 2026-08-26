@@ -26,7 +26,7 @@ Supporting modules around that core:
 
 - **schemas/** — Pydantic DTOs. Requests/responses are always DTOs; a table model never crosses the API boundary.
 - **core/** — config, security (bcrypt + JWT), constants, structured logging, tracing.
-- **exceptions/** — typed `ApiError`s + handlers that turn them into the response envelope.
+- **exceptions/** — `AppError` error classes (stable codes) + handlers that turn them into the response envelope.
 - **middleware/** — sets a `request_id` per request, logs one access line, adds `X-Process-Time`.
 - **utils/** — shared pure helpers.
 
@@ -71,7 +71,7 @@ platform-admin/
 │   ├── env.py                  # async migration runner (reads model metadata)
 │   └── versions/               # migration scripts (0001_initial_schema, ...)
 ├── app/
-│   ├── main.py                 # FastAPI entrypoint; wires routers + middleware + tracing
+│   ├── main.py                 # app factory (create_app) + ASGI entrypoint
 │   ├── database/
 │   │   ├── database.py         # async engine, session factory, get_db dependency
 │   │   ├── session.py          # request-scoped session holder (get_session)
@@ -81,6 +81,7 @@ platform-admin/
 │   ├── api/
 │   │   ├── deps.py             # auth + permission deps (get_current_admin, require_permission)
 │   │   ├── audit.py            # @audit decorator + request-context helper
+│   │   ├── router.py           # aggregate router mounting v1 routes under /api/v1
 │   │   └── v1/
 │   │       ├── health.py       # GET /api/v1/health
 │   │       ├── auth.py         # auth routes (login, refresh, OTP, password reset, logout)
@@ -93,8 +94,8 @@ platform-admin/
 │   │   ├── logging.py          # structured JSON logging + request_id
 │   │   └── tracing.py          # OpenTelemetry setup
 │   ├── exceptions/
-│   │   ├── errors.py           # ApiError + error catalog
-│   │   └── handlers.py         # exception → envelope handlers
+│   │   ├── exceptions.py       # AppError hierarchy + stable codes
+│   │   └── exception_handlers.py  # exception → envelope handlers
 │   ├── middleware/
 │   │   ├── request_context.py  # sets request_id per request
 │   │   └── logging.py          # one access-log line per request

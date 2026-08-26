@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.exceptions.errors import ApiError
+from app.exceptions.exceptions import AppError
 from app.services import health_service
 
 
@@ -20,7 +20,7 @@ async def test_check_raises_when_database_is_down() -> None:
         "ping",
         new=AsyncMock(side_effect=SQLAlchemyError("db down")),
     ):
-        with pytest.raises(ApiError):
+        with pytest.raises(AppError):
             await health_service.check()
 
 
@@ -31,5 +31,5 @@ async def test_check_raises_on_driver_connection_error() -> None:
         "ping",
         new=AsyncMock(side_effect=ConnectionRefusedError("refused")),
     ):
-        with pytest.raises(ApiError):
+        with pytest.raises(AppError):
             await health_service.check()

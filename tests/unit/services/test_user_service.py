@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from app.exceptions.errors import ApiError
+from app.exceptions.exceptions import AppError
 from app.models.enums import UserStatus
 from app.models.user import User
 from app.schemas.user import UserCreate, UserReplace, UserUpdate
@@ -49,7 +49,7 @@ async def test_create_user_duplicate_email() -> None:
         "get_user_by_email",
         new=AsyncMock(return_value=_user()),
     ):
-        with pytest.raises(ApiError):
+        with pytest.raises(AppError):
             await user_service.create_user(
                 UserCreate(name="Alice", email="alice@example.com", password="S3cureP@ss")
             )
@@ -57,7 +57,7 @@ async def test_create_user_duplicate_email() -> None:
 
 async def test_get_user_not_found() -> None:
     with patch.object(user_service.user_repository, "get_user", new=AsyncMock(return_value=None)):
-        with pytest.raises(ApiError):
+        with pytest.raises(AppError):
             await user_service.get_user(uuid.uuid4())
 
 

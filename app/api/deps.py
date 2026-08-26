@@ -9,7 +9,7 @@ from jose import JWTError
 
 from app.api.audit import record_audit
 from app.core.security import decode_token
-from app.exceptions.errors import forbidden, not_authenticated
+from app.exceptions.exceptions import AuthenticationError, PermissionDeniedError
 from app.models.enums import AuditAction, AuditResourceType, PermissionName
 from app.models.platform_admin import PlatformAdmin
 from app.services import auth_service, rbac_service
@@ -19,13 +19,13 @@ bearer_scheme = HTTPBearer(auto_error=False)
 
 def _access_token_payload(credentials: HTTPAuthorizationCredentials | None) -> dict[str, Any]:
     if credentials is None:
-        raise not_authenticated()
+        raise AuthenticationError()
     try:
         payload = decode_token(credentials.credentials)
     except JWTError:
-        raise not_authenticated() from None
+        raise AuthenticationError() from None
     if payload.get("type") != "access":
-        raise not_authenticated()
+        raise AuthenticationError()
     return payload
 
 
@@ -47,7 +47,7 @@ def require_permission(
         granted = await rbac_service.permissions_for_admin(admin.id)
         if required.value not in granted:
             await _record_denial(request=request, admin=admin, permission=required)
-            raise forbidden()
+            raise PermissionDeniedError()
         return None
 
     return _dependency
