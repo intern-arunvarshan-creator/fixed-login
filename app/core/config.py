@@ -5,7 +5,12 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     app_name: str = "platform-admin"
+    app_version: str = "0.1.0"
+    api_v1_prefix: str = "/api/v1"
     database_url: str
+
+    # CORS
+    cors_origins: list[str] = ["*"]
 
     # Logging
     log_level: str = "INFO"
@@ -29,6 +34,9 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
     refresh_token_expire_days: int = 7
+
+    # Audit
+    audit_retention_days: int = 365
 
 
 settings = Settings()

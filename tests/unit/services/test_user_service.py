@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from app.exceptions.errors import ApiError
-from app.models.enums import UserStatus
+from app.exceptions.exceptions import AppError
+from app.models.enums import AuditAction, AuditResourceType, UserStatus
 from app.models.user import User
 from app.schemas.user import UserCreate, UserReplace, UserUpdate
 from app.services import user_service
@@ -23,6 +23,7 @@ def _user(email: str = "alice@example.com") -> User:
 
 
 async def test_create_user() -> None:
+    record = AsyncMock()
     with (
         patch.object(
             user_service.user_repository,
@@ -35,12 +36,19 @@ async def test_create_user() -> None:
             new=AsyncMock(side_effect=lambda user: user),
         ),
         patch.object(user_service, "hash_password", return_value="hashed"),
+        patch.object(user_service.audit_service, "record", new=record),
     ):
         created = await user_service.create_user(
             UserCreate(name="Alice", email="alice@example.com", password="S3cureP@ss")
         )
     assert created.email == "alice@example.com"
     assert created.hashed_password == "hashed"
+    record.assert_awaited_once_with(
+        action=AuditAction.USER_CREATE,
+        resource_type=AuditResourceType.USER,
+        resource_id=str(created.id),
+        details={"email": "alice@example.com", "name": "Alice"},
+    )
 
 
 async def test_create_user_duplicate_email() -> None:
@@ -49,7 +57,7 @@ async def test_create_user_duplicate_email() -> None:
         "get_user_by_email",
         new=AsyncMock(return_value=_user()),
     ):
-        with pytest.raises(ApiError):
+        with pytest.raises(AppError):
             await user_service.create_user(
                 UserCreate(name="Alice", email="alice@example.com", password="S3cureP@ss")
             )
@@ -57,7 +65,7 @@ async def test_create_user_duplicate_email() -> None:
 
 async def test_get_user_not_found() -> None:
     with patch.object(user_service.user_repository, "get_user", new=AsyncMock(return_value=None)):
-        with pytest.raises(ApiError):
+        with pytest.raises(AppError):
             await user_service.get_user(uuid.uuid4())
 
 
@@ -81,6 +89,7 @@ async def test_list_users() -> None:
 
 async def test_update_user_applies_fields() -> None:
     user = _user()
+    record = AsyncMock()
 
     async def _apply(user, data):
         for key, value in data.items():
@@ -97,13 +106,21 @@ async def test_update_user_applies_fields() -> None:
         patch.object(
             user_service.user_repository, "update_user", new=AsyncMock(side_effect=_apply)
         ),
+        patch.object(user_service.audit_service, "record", new=record),
     ):
         result = await user_service.update_user(user_id=user.id, data=UserUpdate(name="Bob"))
     assert result.name == "Bob"
+    record.assert_awaited_once_with(
+        action=AuditAction.USER_UPDATE,
+        resource_type=AuditResourceType.USER,
+        resource_id=str(user.id),
+        details={"name": "Bob"},
+    )
 
 
 async def test_update_user_email_change() -> None:
     user = _user()
+    record = AsyncMock()
     with (
         patch.object(user_service.user_repository, "get_user", new=AsyncMock(return_value=user)),
         patch.object(
@@ -116,6 +133,7 @@ async def test_update_user_email_change() -> None:
             "update_user",
             new=AsyncMock(side_effect=lambda user, data: user),
         ),
+        patch.object(user_service.audit_service, "record", new=record),
     ):
         result = await user_service.update_user(
             user_id=user.id, data=UserUpdate(email="new@example.com")
@@ -125,6 +143,7 @@ async def test_update_user_email_change() -> None:
 
 async def test_replace_user() -> None:
     user = _user()
+    record = AsyncMock()
     with (
         patch.object(user_service.user_repository, "get_user", new=AsyncMock(return_value=user)),
         patch.object(
@@ -138,18 +157,32 @@ async def test_replace_user() -> None:
             "update_user",
             new=AsyncMock(side_effect=lambda user, data: user),
         ),
+        patch.object(user_service.audit_service, "record", new=record),
     ):
         result = await user_service.replace_user(
             user_id=user.id,
             data=UserReplace(name="Alice", email="alice@example.com", password="S3cureP@ss"),
         )
     assert result is user
+    record.assert_awaited_once_with(
+        action=AuditAction.USER_REPLACE,
+        resource_type=AuditResourceType.USER,
+        resource_id=str(user.id),
+        details={"email": "alice@example.com", "name": "Alice"},
+    )
 
 
 async def test_delete_user() -> None:
     user = _user()
+    record = AsyncMock()
     with (
         patch.object(user_service.user_repository, "get_user", new=AsyncMock(return_value=user)),
         patch.object(user_service.user_repository, "delete_user", new=AsyncMock(return_value=None)),
+        patch.object(user_service.audit_service, "record", new=record),
     ):
         await user_service.delete_user(user.id)
+    record.assert_awaited_once_with(
+        action=AuditAction.USER_DELETE,
+        resource_type=AuditResourceType.USER,
+        resource_id=str(user.id),
+    )

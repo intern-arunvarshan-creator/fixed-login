@@ -14,12 +14,12 @@ from app.core.security import (
     verify_password,
 )
 from app.core.tracing import traced
-from app.exceptions.errors import (
-    account_inactive,
-    invalid_credentials,
-    invalid_otp,
-    not_authenticated,
-    password_reset_failed,
+from app.exceptions.exceptions import (
+    AccountInactiveError,
+    AuthenticationError,
+    InvalidCredentialsError,
+    InvalidOtpError,
+    PasswordResetFailedError,
 )
 from app.models.enums import AdminStatus
 from app.models.platform_admin import PlatformAdmin
@@ -44,9 +44,9 @@ async def login(credentials: LoginRequest) -> TokenResponse:
     if admin is None or not verify_password(
         plain=credentials.password, hashed=admin.hashed_password
     ):
-        raise invalid_credentials()
+        raise InvalidCredentialsError()
     if admin.status != AdminStatus.ACTIVE:
-        raise account_inactive()
+        raise AccountInactiveError()
     permissions = await rbac_service.permissions_for_admin(admin.id)
     return await _issue_tokens(admin, permissions=sorted(permissions))
 
@@ -71,9 +71,9 @@ async def _issue_tokens(admin: PlatformAdmin, permissions: list[str]) -> TokenRe
 async def get_admin_by_id(admin_id: uuid.UUID) -> PlatformAdmin:
     admin = await auth_repository.get_admin_by_id(admin_id)
     if admin is None:
-        raise not_authenticated()
+        raise AuthenticationError()
     if admin.status != AdminStatus.ACTIVE:
-        raise account_inactive()
+        raise AccountInactiveError()
     return admin
 
 
@@ -81,11 +81,11 @@ async def get_admin_from_payload(payload: dict[str, Any]) -> PlatformAdmin:
     """Resolve and validate the admin behind a decoded access/refresh token payload."""
     jti = payload.get("jti")
     if jti is not None and await revoked_token_repository.is_revoked(jti):
-        raise not_authenticated()
+        raise AuthenticationError()
     try:
         admin_id = uuid.UUID(str(payload.get("sub")))
     except ValueError:
-        raise not_authenticated() from None
+        raise AuthenticationError() from None
     return await get_admin_by_id(admin_id)
 
 
@@ -93,9 +93,9 @@ async def refresh(payload: RefreshRequest) -> TokenResponse:
     try:
         data = decode_token(payload.refresh_token)
     except JWTError:
-        raise not_authenticated() from None
+        raise AuthenticationError() from None
     if data.get("type") != "refresh":
-        raise not_authenticated()
+        raise AuthenticationError()
     admin = await get_admin_from_payload(data)
     permissions = await rbac_service.permissions_for_admin(admin.id)
     return await _issue_tokens(admin, permissions=sorted(permissions))
@@ -111,13 +111,13 @@ async def logout(access_token: str) -> None:
     try:
         payload = decode_token(access_token)
     except JWTError:
-        raise not_authenticated() from None
+        raise AuthenticationError() from None
     if payload.get("type") != "access":
-        raise not_authenticated()
+        raise AuthenticationError()
     access_jti = payload.get("jti")
     access_exp = payload.get("exp")
     if not access_jti or access_exp is None:
-        raise not_authenticated()
+        raise AuthenticationError()
     await revoked_token_repository.revoke(
         jti=access_jti, expires_at=_epoch_to_naive_utc(access_exp)
     )
@@ -143,7 +143,7 @@ async def verify_otp(payload: VerifyOtpRequest) -> None:
     """Verify the OTP, returning one opaque failure for any invalid case."""
     admin = await auth_repository.get_admin_by_email(payload.email)
     if admin is None or admin.status != AdminStatus.ACTIVE or payload.otp != OTP_CODE:
-        raise invalid_otp()
+        raise InvalidOtpError()
 
 
 @traced("auth_service.update_password")
@@ -151,7 +151,7 @@ async def update_password(payload: UpdatePasswordRequest) -> PlatformAdmin:
     """Set a new password, failing opaquely for unknown or inactive accounts."""
     admin = await auth_repository.get_admin_by_email(payload.email)
     if admin is None or admin.status != AdminStatus.ACTIVE:
-        raise password_reset_failed()
+        raise PasswordResetFailedError()
     return await auth_repository.update_admin_password(
         admin=admin, hashed_password=hash_password(payload.new_password)
     )

@@ -5,7 +5,7 @@ from fastapi.security import HTTPAuthorizationCredentials
 
 from app.api.audit import audit
 from app.api.deps import bearer_scheme, get_current_admin
-from app.exceptions.errors import not_authenticated
+from app.exceptions.exceptions import AuthenticationError
 from app.models.enums import AuditAction, AuditResourceType
 from app.models.platform_admin import PlatformAdmin
 from app.schemas.auth import (
@@ -138,6 +138,6 @@ async def logout(
 ) -> ApiResponse[None]:
     """Log out the current admin, revoking both the access token and its linked refresh token."""
     if credentials is None:
-        raise not_authenticated()
+        raise AuthenticationError()
     await auth_service.logout(access_token=credentials.credentials)
     return ApiResponse(code=CODE_LOGOUT_OK, message=MSG_LOGOUT_OK, data=None)

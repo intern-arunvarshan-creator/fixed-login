@@ -8,11 +8,10 @@ from typing import Any, ParamSpec, TypeVar
 from fastapi import Request
 from pydantic import BaseModel
 
-from app.exceptions.errors import ApiError
-from app.models.enums import AuditAction, AuditResourceType
+from app.exceptions.exceptions import AppError
+from app.models.enums import ActorType, AuditAction, AuditResourceType
 from app.models.platform_admin import PlatformAdmin
 from app.services import audit_service
-from app.utils.redact import redact
 
 P = ParamSpec("P")
 R = TypeVar("R")
@@ -43,17 +42,19 @@ async def record_audit(
     details: dict[str, Any] | None = None,
     payload: dict[str, Any] | None = None,
     response: dict[str, Any] | None = None,
+    actor_type: str | None = None,
 ) -> None:
     """Record an audit event with request-derived context (url, id, ip, user-agent)."""
     await audit_service.record(
-        actor=actor,
         action=action,
+        actor=actor,
+        actor_type=actor_type,
         resource_type=resource_type,
         resource_id=resource_id,
         details=details,
         url=request.url.path,
-        payload=redact(payload),
-        response=redact(response),
+        payload=payload,
+        response=response,
         request_id=getattr(request.state, "request_id", None),
         ip_address=request.client.host if request.client else None,
         user_agent=request.headers.get("user-agent"),
@@ -76,13 +77,15 @@ def audit(
         async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             ctx = _build_context(kwargs)
             actor_value = _resolve_actor(ctx, actor)
+            actor_type = ActorType.ADMIN.value if actor_value is not None else None
             try:
                 result = await func(*args, **kwargs)
-            except ApiError as exc:
+            except AppError as exc:
                 if failure_action is not None:
                     await _write_entry(
                         ctx=ctx,
                         actor=actor_value,
+                        actor_type=actor_type,
                         action=failure_action,
                         resource_type=resource_type,
                         resource_id=_call(resource_id, ctx),
@@ -93,6 +96,7 @@ def audit(
             await _write_entry(
                 ctx=ctx,
                 actor=actor_value,
+                actor_type=actor_type,
                 action=action,
                 resource_type=resource_type,
                 resource_id=_call(resource_id, ctx),
@@ -141,11 +145,13 @@ async def _write_entry(
     resource_id: str | None,
     details: dict[str, Any] | None,
     response: dict[str, Any] | None = None,
+    actor_type: str | None = None,
 ) -> None:
     """Persist one Audit Entry, deriving request context and payload from ``ctx``."""
     await record_audit(
         request=ctx.request,
         actor=actor,
+        actor_type=actor_type,
         action=action,
         resource_type=resource_type,
         resource_id=resource_id,

@@ -13,6 +13,7 @@ class AuditLog(SQLModel, table=True):
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     actor: str | None = Field(default=None, max_length=255)
+    actor_type: str | None = Field(default=None, max_length=255)
     action: str = Field(index=True, max_length=255)
     resource_type: str | None = Field(default=None, max_length=255)
     resource_id: str | None = Field(default=None, max_length=255)

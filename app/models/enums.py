@@ -36,6 +36,11 @@ class AuditResourceType(StrEnum):
     AUDIT = "audit"
 
 
+class ActorType(StrEnum):
+    ADMIN = "admin"
+    SYSTEM = "system"
+
+
 class PermissionName(StrEnum):
     """The fixed set of permissions routes can require (written ``<screen>.<R|W>``)."""
 
@@ -85,6 +90,12 @@ class AuditResourceTypeFilter(StrEnum):
     AUTH = AuditResourceType.AUTH.value
     USER = AuditResourceType.USER.value
     AUDIT = AuditResourceType.AUDIT.value
+
+
+class AuditActorTypeFilter(StrEnum):
+    ALL = "All"
+    ADMIN = ActorType.ADMIN.value
+    SYSTEM = ActorType.SYSTEM.value
 
 
 def resolve_filter[T: StrEnum](value: StrEnum, base: type[T]) -> T | None:

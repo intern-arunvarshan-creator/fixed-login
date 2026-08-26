@@ -13,6 +13,7 @@ from app.models.audit_log import AuditLog
 async def create_audit_log(
     actor: str | None,
     action: str,
+    actor_type: str | None = None,
     resource_type: str | None = None,
     resource_id: str | None = None,
     details: dict[str, Any] | None = None,
@@ -26,6 +27,7 @@ async def create_audit_log(
     db = get_session()
     entry = AuditLog(
         actor=actor,
+        actor_type=actor_type,
         action=action,
         resource_type=resource_type,
         resource_id=resource_id,
@@ -49,6 +51,7 @@ async def list_audit_logs(
     actor: str | None = None,
     action: str | None = None,
     resource_type: str | None = None,
+    actor_type: str | None = None,
 ) -> tuple[list[AuditLog], int]:
     db = get_session()
     filters = []
@@ -58,6 +61,8 @@ async def list_audit_logs(
         filters.append(col(AuditLog.action) == action)
     if resource_type:
         filters.append(col(AuditLog.resource_type) == resource_type)
+    if actor_type:
+        filters.append(col(AuditLog.actor_type) == actor_type)
 
     total = await db.scalar(select(func.count()).select_from(AuditLog).where(*filters))
     result = await db.execute(

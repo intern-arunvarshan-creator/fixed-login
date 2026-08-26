@@ -1,0 +1,108 @@
+"""Domain error hierarchy with stable namespaced result codes."""
+
+from typing import Any
+
+
+class AppError(Exception):
+    """Base for every domain error: status, stable code, message, and data."""
+
+    status_code: int = 500
+    code: str = "E_500_INTERNAL_ERROR"
+    message: str = "Something went wrong. Please try again later."
+
+    def __init__(self, *, data: dict[str, Any] | None = None) -> None:
+        super().__init__(self.message)
+        self.data = data
+
+
+def field_errors(errors: list[tuple[str, str]]) -> dict[str, Any]:
+    """Shape (field, issue) pairs into the ``data.errors`` payload."""
+    return {"errors": [{"field": field, "issue": issue} for field, issue in errors]}
+
+
+class AuthenticationError(AppError):
+    """Raised when no valid access token authenticates the request."""
+
+    status_code = 401
+    code = "E_401_NOT_AUTHENTICATED"
+    message = "Not authenticated"
+
+
+class InvalidCredentialsError(AuthenticationError):
+    """Raised when the email/password does not match a Platform Admin."""
+
+    code = "E_401_AUTH_INVALID_CREDENTIALS"
+    message = "Invalid email or password"
+
+
+class PermissionDeniedError(AppError):
+    """Raised when the Current Admin lacks the required permission."""
+
+    status_code = 403
+    code = "E_403_FORBIDDEN"
+    message = "You do not have permission to perform this action"
+
+
+class AccountInactiveError(PermissionDeniedError):
+    """Raised when an otherwise-valid admin's account is inactive."""
+
+    code = "E_403_AUTH_ACCOUNT_INACTIVE"
+    message = "This account is inactive"
+
+
+class UserNotFoundError(AppError):
+    """Raised when a User does not exist."""
+
+    status_code = 404
+    code = "E_404_USR_NOT_FOUND"
+    message = "User not found"
+
+
+class ConflictError(AppError):
+    """Raised when a request violates a data constraint."""
+
+    status_code = 409
+    code = "E_409_CONFLICT"
+    message = "A conflict occurred"
+
+
+class EmailExistsError(ConflictError):
+    """Raised when the email is already registered."""
+
+    code = "E_409_USR_EMAIL_EXISTS"
+    message = "Email is already registered"
+
+    def __init__(self) -> None:
+        super().__init__(data=field_errors([("email", self.message)]))
+
+
+class InvalidOtpError(AppError):
+    """Raised when the password-reset OTP is wrong or expired."""
+
+    status_code = 400
+    code = "E_400_AUTH_INVALID_OTP"
+    message = "Invalid or expired OTP"
+
+
+class PasswordResetFailedError(AppError):
+    """Raised when a password reset cannot be completed."""
+
+    status_code = 400
+    code = "E_400_AUTH_PASSWORD_RESET_FAILED"
+    message = "Unable to reset password"
+
+
+class ValidationError(AppError):
+    """Raised when request fields fail validation."""
+
+    status_code = 422
+    code = "E_422_VALIDATION_FAILED"
+    message = "Validation failed"
+
+
+class ServiceUnavailableError(AppError):
+    """Raised when a downstream dependency (e.g. the database) is down."""
+
+    status_code = 503
+    code = "E_503_HEALTH_DOWN"
+    message = "Service is unhealthy"

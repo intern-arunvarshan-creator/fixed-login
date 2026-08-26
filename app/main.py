@@ -1,40 +1,49 @@
 from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.v1.audit_logs import router as audit_logs_router
-from app.api.v1.auth import router as auth_router
-from app.api.v1.health import router as health_router
-from app.api.v1.users import router as users_router
-from app.core.config import settings
+from app.api.router import api_router
+from app.core.config import Settings, settings
 from app.core.logging import configure_logging
 from app.core.tracing import instrument_app
 from app.database.database import get_db
-from app.exceptions.handlers import register_exception_handlers
+from app.exceptions.exception_handlers import register_exception_handlers
 from app.middleware.logging import AccessLogMiddleware
 from app.middleware.request_context import RequestContextMiddleware
 
 configure_logging()
 
-# ``get_db`` runs for every route, so a request-scoped session is available to
-# the repository layer before any endpoint or dependency executes.
-app = FastAPI(
-    title=settings.app_name,
-    version="0.1.0",
-    dependencies=[Depends(get_db)],
-)
 
-register_exception_handlers(app)
+def create_app(app_settings: Settings = settings) -> FastAPI:
+    """Build and configure the FastAPI application."""
+    # ``get_db`` runs for every route, so a request-scoped session is available to
+    # the repository layer before any endpoint or dependency executes.
+    app = FastAPI(
+        title=app_settings.app_name,
+        version=app_settings.app_version,
+        dependencies=[Depends(get_db)],
+    )
 
-# Starlette runs the *last* added middleware first (outermost). Add the access
-# log first so RequestContextMiddleware runs before it and sets request_id.
-app.add_middleware(AccessLogMiddleware)
-app.add_middleware(RequestContextMiddleware)
+    register_exception_handlers(app)
 
-app.include_router(health_router, prefix="/api/v1")
-app.include_router(auth_router, prefix="/api/v1")
-app.include_router(users_router, prefix="/api/v1/users")
-app.include_router(audit_logs_router, prefix="/api/v1")
+    # Starlette runs the *last* added middleware first (outermost). Add the access
+    # log first so RequestContextMiddleware runs before it and sets request_id.
+    app.add_middleware(AccessLogMiddleware)
+    app.add_middleware(RequestContextMiddleware)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=app_settings.cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
-instrument_app(app)
+    app.include_router(api_router, prefix=app_settings.api_v1_prefix)
+
+    instrument_app(app)
+    return app
+
+
+app = create_app()
 
 
 def main() -> None:

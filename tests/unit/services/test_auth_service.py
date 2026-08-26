@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from jose import JWTError
 
-from app.exceptions.errors import ApiError
+from app.exceptions.exceptions import AppError
 from app.models.enums import AdminStatus
 from app.models.platform_admin import PlatformAdmin
 from app.schemas.auth import (
@@ -58,7 +58,7 @@ async def test_login_invalid_credentials() -> None:
         "get_admin_by_email",
         new=AsyncMock(return_value=None),
     ):
-        with pytest.raises(ApiError):
+        with pytest.raises(AppError):
             await auth_service.login(LoginRequest(email="nope@example.com", password="pw"))
 
 
@@ -78,7 +78,7 @@ async def test_login_inactive_account() -> None:
         ),
         patch.object(auth_service, "verify_password", return_value=True),
     ):
-        with pytest.raises(ApiError):
+        with pytest.raises(AppError):
             await auth_service.login(LoginRequest(email="admin@example.com", password="pw"))
 
 
@@ -118,7 +118,7 @@ async def test_refresh_rejects_malformed_subject() -> None:
     with patch.object(
         auth_service, "decode_token", return_value={"type": "refresh", "sub": "not-a-uuid"}
     ):
-        with pytest.raises(ApiError):
+        with pytest.raises(AppError):
             await auth_service.refresh(RefreshRequest(refresh_token="r"))
 
 
@@ -126,13 +126,13 @@ async def test_refresh_rejects_wrong_token_type() -> None:
     with patch.object(
         auth_service, "decode_token", return_value={"type": "access", "sub": str(uuid.uuid4())}
     ):
-        with pytest.raises(ApiError):
+        with pytest.raises(AppError):
             await auth_service.refresh(RefreshRequest(refresh_token="r"))
 
 
 async def test_refresh_rejects_invalid_token() -> None:
     with patch.object(auth_service, "decode_token", side_effect=JWTError("bad token")):
-        with pytest.raises(ApiError):
+        with pytest.raises(AppError):
             await auth_service.refresh(RefreshRequest(refresh_token="r"))
 
 
@@ -149,7 +149,7 @@ async def test_refresh_rejects_unknown_admin() -> None:
             new=AsyncMock(return_value=None),
         ),
     ):
-        with pytest.raises(ApiError):
+        with pytest.raises(AppError):
             await auth_service.refresh(RefreshRequest(refresh_token="r"))
 
 
@@ -172,7 +172,7 @@ async def test_get_admin_by_id_unknown_raises() -> None:
         "get_admin_by_id",
         new=AsyncMock(return_value=None),
     ):
-        with pytest.raises(ApiError):
+        with pytest.raises(AppError):
             await auth_service.get_admin_by_id(uuid.uuid4())
 
 
@@ -189,7 +189,7 @@ async def test_get_admin_by_id_inactive_raises() -> None:
         "get_admin_by_id",
         new=AsyncMock(return_value=admin),
     ):
-        with pytest.raises(ApiError):
+        with pytest.raises(AppError):
             await auth_service.get_admin_by_id(admin.id)
 
 
@@ -255,7 +255,7 @@ async def test_verify_otp_rejects_wrong_otp() -> None:
         "get_admin_by_email",
         new=AsyncMock(return_value=admin),
     ):
-        with pytest.raises(ApiError) as exc_info:
+        with pytest.raises(AppError) as exc_info:
             await auth_service.verify_otp(VerifyOtpRequest(email="admin@example.com", otp="wrong"))
     assert exc_info.value.code == "E_400_AUTH_INVALID_OTP"
 
@@ -266,7 +266,7 @@ async def test_verify_otp_rejects_unknown_admin_without_revealing() -> None:
         "get_admin_by_email",
         new=AsyncMock(return_value=None),
     ):
-        with pytest.raises(ApiError) as exc_info:
+        with pytest.raises(AppError) as exc_info:
             await auth_service.verify_otp(VerifyOtpRequest(email="nope@example.com", otp="12345"))
     assert exc_info.value.code == "E_400_AUTH_INVALID_OTP"
 
@@ -277,7 +277,7 @@ async def test_update_password_rejects_unknown_admin_without_revealing() -> None
         "get_admin_by_email",
         new=AsyncMock(return_value=None),
     ):
-        with pytest.raises(ApiError) as exc_info:
+        with pytest.raises(AppError) as exc_info:
             await auth_service.update_password(
                 UpdatePasswordRequest(
                     email="nope@example.com",
