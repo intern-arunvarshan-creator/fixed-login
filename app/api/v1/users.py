@@ -2,10 +2,9 @@
 
 import uuid
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query
 
-from app.api.audit import audit
-from app.api.deps import get_current_admin, require_permission
+from app.api.deps import require_permission
 from app.core.constants import (
     DEFAULT_PAGE,
     DEFAULT_PAGE_SIZE,
@@ -14,14 +13,11 @@ from app.core.constants import (
     MIN_PAGE_SIZE,
 )
 from app.models.enums import (
-    AuditAction,
-    AuditResourceType,
     PermissionName,
     UserStatus,
     UserStatusFilter,
     resolve_filter,
 )
-from app.models.platform_admin import PlatformAdmin
 from app.schemas.common import ApiResponse, ListData, build_list_data
 from app.schemas.user import (
     CODE_CREATED,
@@ -45,16 +41,8 @@ router = APIRouter(tags=["Users"])
 
 
 @router.post("", response_model=ApiResponse[UserRead], status_code=201, summary="Create a user")
-@audit(
-    action=AuditAction.USER_CREATE,
-    resource_type=AuditResourceType.USER,
-    resource_id=lambda ctx: str(ctx.result.data.id),
-    details=lambda ctx: {"email": ctx.result.data.email, "name": ctx.result.data.name},
-)
 async def create_user(
     data: UserCreate,
-    request: Request,
-    admin: PlatformAdmin = Depends(get_current_admin),
     _: None = Depends(require_permission(PermissionName.USERS_WRITE)),
 ) -> ApiResponse[UserRead]:
     """Create a new user with a name, email, and password."""
@@ -95,17 +83,9 @@ async def get_user(
 
 
 @router.put("/{user_id}", response_model=ApiResponse[UserRead], summary="Fully replace a user")
-@audit(
-    action=AuditAction.USER_REPLACE,
-    resource_type=AuditResourceType.USER,
-    resource_id=lambda ctx: str(ctx.result.data.id),
-    details=lambda ctx: {"email": ctx.result.data.email},
-)
 async def replace_user(
     user_id: uuid.UUID,
     data: UserReplace,
-    request: Request,
-    admin: PlatformAdmin = Depends(get_current_admin),
     _: None = Depends(require_permission(PermissionName.USERS_WRITE)),
 ) -> ApiResponse[UserRead]:
     """Replace a user's name, email, and password; status is left unchanged."""
@@ -114,17 +94,9 @@ async def replace_user(
 
 
 @router.patch("/{user_id}", response_model=ApiResponse[UserRead], summary="Partially update a user")
-@audit(
-    action=AuditAction.USER_UPDATE,
-    resource_type=AuditResourceType.USER,
-    resource_id=lambda ctx: str(ctx.result.data.id),
-    details=lambda ctx: {"changed_fields": sorted(ctx.body.model_dump(exclude_unset=True).keys())},
-)
 async def update_user(
     user_id: uuid.UUID,
     data: UserUpdate,
-    request: Request,
-    admin: PlatformAdmin = Depends(get_current_admin),
     _: None = Depends(require_permission(PermissionName.USERS_WRITE)),
 ) -> ApiResponse[UserRead]:
     """Partially update a user's name, email, or status."""
@@ -133,15 +105,8 @@ async def update_user(
 
 
 @router.delete("/{user_id}", response_model=ApiResponse[None], summary="Delete a user")
-@audit(
-    action=AuditAction.USER_DELETE,
-    resource_type=AuditResourceType.USER,
-    resource_id=lambda ctx: str(ctx.args["user_id"]),
-)
 async def delete_user(
     user_id: uuid.UUID,
-    request: Request,
-    admin: PlatformAdmin = Depends(get_current_admin),
     _: None = Depends(require_permission(PermissionName.USERS_WRITE)),
 ) -> ApiResponse[None]:
     """Delete a user by id."""

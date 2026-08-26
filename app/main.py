@@ -1,4 +1,5 @@
 from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import api_router
 from app.core.config import Settings, settings
@@ -28,8 +29,15 @@ def create_app(app_settings: Settings = settings) -> FastAPI:
     # log first so RequestContextMiddleware runs before it and sets request_id.
     app.add_middleware(AccessLogMiddleware)
     app.add_middleware(RequestContextMiddleware)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=app_settings.cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
-    app.include_router(api_router)
+    app.include_router(api_router, prefix=app_settings.api_v1_prefix)
 
     instrument_app(app)
     return app

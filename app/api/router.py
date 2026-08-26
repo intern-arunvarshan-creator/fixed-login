@@ -1,10 +1,10 @@
-"""Aggregate router that mounts every v1 route under /api/v1."""
+"""Aggregate router that mounts every v1 route (prefix set at include time)."""
 
 from fastapi import APIRouter
 
 from app.api.v1 import audit_logs, auth, health, users
 
-api_router = APIRouter(prefix="/api/v1")
+api_router = APIRouter()
 
 api_router.include_router(health.router)
 api_router.include_router(auth.router)

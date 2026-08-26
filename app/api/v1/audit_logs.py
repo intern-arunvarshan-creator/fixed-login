@@ -12,8 +12,10 @@ from app.core.constants import (
     MIN_PAGE_SIZE,
 )
 from app.models.enums import (
+    ActorType,
     AuditAction,
     AuditActionFilter,
+    AuditActorTypeFilter,
     AuditResourceType,
     AuditResourceTypeFilter,
     PermissionName,
@@ -45,6 +47,9 @@ async def list_audit_logs(
     resource_type: AuditResourceTypeFilter = Query(
         AuditResourceTypeFilter.ALL, description="Filter by resource type"
     ),
+    actor_type: AuditActorTypeFilter = Query(
+        AuditActorTypeFilter.ALL, description="Filter by actor type"
+    ),
     admin: PlatformAdmin = Depends(get_current_admin),
     _: None = Depends(require_permission(PermissionName.AUDIT_READ)),
 ) -> ApiResponse[ListData[AuditLogRead]]:
@@ -55,6 +60,7 @@ async def list_audit_logs(
         actor=actor,
         action=resolve_filter(action, AuditAction),
         resource_type=resolve_filter(resource_type, AuditResourceType),
+        actor_type=resolve_filter(actor_type, ActorType),
     )
     return ApiResponse(
         code=CODE_LISTED,
