@@ -49,7 +49,15 @@ app = create_app()
 def main() -> None:
     import uvicorn
 
-    uvicorn.run("app.main:app", reload=True, app_dir=".", log_config=None, access_log=False)
+    uvicorn.run(
+        "app.main:app",
+        host="0.0.0.0",  # bind all interfaces so colleagues on the LAN can reach it  # noqa: S104
+        port=8000,
+        reload=True,
+        app_dir=".",
+        log_config=None,
+        access_log=False,
+    )
 
 
 if __name__ == "__main__":
