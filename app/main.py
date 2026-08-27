@@ -51,7 +51,8 @@ def main() -> None:
 
     uvicorn.run(
         "app.main:app",
-        host="0.0.0.0",  # bind all interfaces so colleagues on the LAN can reach it  # noqa: S104
+        # Bind all interfaces so colleagues on the LAN can reach it.
+        host="0.0.0.0",  # noqa: S104  # nosec B104
         port=8000,
         reload=True,
         reload_dirs=["app"],

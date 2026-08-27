@@ -32,8 +32,14 @@ class Settings(BaseSettings):
     # Auth
     secret_key: str
     algorithm: str = "HS256"
-    access_token_expire_minutes: int = 60
+    access_token_expire_minutes: int = 20
     refresh_token_expire_days: int = 7
+    max_failed_login_attempts: int = 5
+    lockout_minutes: int = 15
+    otp_expiry_minutes: int = 10
+    otp_max_requests_per_window: int = 3
+    otp_throttle_window_minutes: int = 15
+    password_history_depth: int = 3
 
     # Audit
     audit_retention_days: int = 365

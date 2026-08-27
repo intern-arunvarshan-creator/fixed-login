@@ -1,4 +1,6 @@
 from app.models.audit_log import AuditLog
+from app.models.password_history import PasswordHistory
+from app.models.password_reset_otp import PasswordResetOtp
 from app.models.platform_admin import PlatformAdmin
 from app.models.platform_admin_role import PlatformAdminRole
 from app.models.revoked_token import RevokedToken
@@ -9,6 +11,8 @@ from app.models.user import User
 
 __all__ = [
     "AuditLog",
+    "PasswordHistory",
+    "PasswordResetOtp",
     "PlatformAdmin",
     "PlatformAdminRole",
     "Role",

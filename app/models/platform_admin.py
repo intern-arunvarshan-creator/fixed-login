@@ -23,5 +23,8 @@ class PlatformAdmin(SQLModel, table=True):
             nullable=False,
         ),
     )
+    failed_login_attempts: int = Field(default=0)
+    locked_until: datetime | None = Field(default=None)
+    current_refresh_jti: str | None = Field(default=None, max_length=36)
     created_at: datetime = Field(default_factory=utcnow)
     updated_at: datetime = Field(default_factory=utcnow, sa_column_kwargs={"onupdate": func.now()})

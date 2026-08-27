@@ -25,14 +25,21 @@ class AuthenticationError(AppError):
 
     status_code = 401
     code = "E_401_NOT_AUTHENTICATED"
-    message = "Not authenticated"
+    message = "Your session has expired. Please login again."
 
 
 class InvalidCredentialsError(AuthenticationError):
     """Raised when the email/password does not match a Platform Admin."""
 
     code = "E_401_AUTH_INVALID_CREDENTIALS"
-    message = "Invalid email or password"
+    message = "Invalid user credentials."
+
+
+class AccountLockedError(AuthenticationError):
+    """Raised when the account is temporarily locked after repeated failures."""
+
+    code = "E_401_AUTH_ACCOUNT_LOCKED"
+    message = "Your account has been temporarily locked. Please try again after 15 minutes"
 
 
 class PermissionDeniedError(AppError):
@@ -47,7 +54,7 @@ class AccountInactiveError(PermissionDeniedError):
     """Raised when an otherwise-valid admin's account is inactive."""
 
     code = "E_403_AUTH_ACCOUNT_INACTIVE"
-    message = "This account is inactive"
+    message = "User did not authorise to access the Admin Portal."
 
 
 class UserNotFoundError(AppError):
@@ -125,6 +132,22 @@ class InvalidOtpError(AppError):
     status_code = 400
     code = "E_400_AUTH_INVALID_OTP"
     message = "Invalid or expired OTP"
+
+
+class OtpThrottledError(AppError):
+    """Raised when password-reset OTP requests exceed the throttle window."""
+
+    status_code = 429
+    code = "E_429_AUTH_OTP_THROTTLED"
+    message = "Too many OTP requests. Please try again later."
+
+
+class PasswordReuseError(AppError):
+    """Raised when the new password matches a previously used password."""
+
+    status_code = 400
+    code = "E_400_AUTH_PASSWORD_REUSED"
+    message = "New password must not match a previous password"
 
 
 class PasswordResetFailedError(AppError):
