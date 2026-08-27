@@ -83,7 +83,7 @@ async def get_admin_from_payload(payload: dict[str, Any]) -> PlatformAdmin:
     if jti is not None and await revoked_token_repository.is_revoked(jti):
         raise AuthenticationError()
     try:
-        admin_id = uuid.UUID(str(payload.get("sub")))
+        admin_id = uuid.UUID(str(payload.get("user_id")))
     except ValueError:
         raise AuthenticationError() from None
     return await get_admin_by_id(admin_id)

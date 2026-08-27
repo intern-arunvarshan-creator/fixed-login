@@ -84,3 +84,8 @@ def configure_logging() -> None:
         file_handler.setFormatter(JsonFormatter())
         file_handler.addFilter(RequestIdFilter())
         root.addHandler(file_handler)
+
+    # watchfiles logs "N change detected" at INFO for every filesystem event it
+    # sees. Quiet it so those lines can never be re-written to the watched log
+    # file and re-trigger the watcher (an infinite detect→log→write loop).
+    logging.getLogger("watchfiles").setLevel(logging.WARNING)

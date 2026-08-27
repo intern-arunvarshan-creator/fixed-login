@@ -89,7 +89,7 @@ async def test_refresh_success() -> None:
     )
     with (
         patch.object(
-            auth_service, "decode_token", return_value={"type": "refresh", "sub": str(admin_id)}
+            auth_service, "decode_token", return_value={"type": "refresh", "user_id": str(admin_id)}
         ),
         patch.object(
             auth_service.auth_repository,
@@ -116,7 +116,7 @@ async def test_refresh_success() -> None:
 
 async def test_refresh_rejects_malformed_subject() -> None:
     with patch.object(
-        auth_service, "decode_token", return_value={"type": "refresh", "sub": "not-a-uuid"}
+        auth_service, "decode_token", return_value={"type": "refresh", "user_id": "not-a-uuid"}
     ):
         with pytest.raises(AppError):
             await auth_service.refresh(RefreshRequest(refresh_token="r"))
@@ -124,7 +124,7 @@ async def test_refresh_rejects_malformed_subject() -> None:
 
 async def test_refresh_rejects_wrong_token_type() -> None:
     with patch.object(
-        auth_service, "decode_token", return_value={"type": "access", "sub": str(uuid.uuid4())}
+        auth_service, "decode_token", return_value={"type": "access", "user_id": str(uuid.uuid4())}
     ):
         with pytest.raises(AppError):
             await auth_service.refresh(RefreshRequest(refresh_token="r"))
@@ -141,7 +141,7 @@ async def test_refresh_rejects_unknown_admin() -> None:
         patch.object(
             auth_service,
             "decode_token",
-            return_value={"type": "refresh", "sub": str(uuid.uuid4())},
+            return_value={"type": "refresh", "user_id": str(uuid.uuid4())},
         ),
         patch.object(
             auth_service.auth_repository,
