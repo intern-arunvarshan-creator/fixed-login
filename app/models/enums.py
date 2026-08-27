@@ -1,12 +1,7 @@
 from enum import Enum, StrEnum
 
 
-class UserStatus(StrEnum):
-    ACTIVE = "active"
-    INACTIVE = "inactive"
-
-
-class AdminStatus(StrEnum):
+class Status(StrEnum):
     ACTIVE = "active"
     INACTIVE = "inactive"
 
@@ -14,10 +9,12 @@ class AdminStatus(StrEnum):
 class AuditAction(StrEnum):
     LOGIN_SUCCESS = "auth.login.success"
     LOGIN_FAILURE = "auth.login.failure"
+    LOGIN_LOCKOUT = "auth.login.lockout"
     REFRESH_SUCCESS = "auth.refresh.success"
     REFRESH_FAILURE = "auth.refresh.failure"
     LOGOUT = "auth.logout"
     OTP_REQUESTED = "auth.password_reset.otp_requested"  # noqa: S105
+    OTP_THROTTLED = "auth.password_reset.otp_throttled"  # noqa: S105
     OTP_VERIFY_SUCCESS = "auth.password_reset.otp_verify_success"  # noqa: S105
     OTP_VERIFY_FAILURE = "auth.password_reset.otp_verify_failure"  # noqa: S105
     PASSWORD_RESET_SUCCESS = "auth.password_reset.success"  # noqa: S105  # nosec B105
@@ -26,6 +23,13 @@ class AuditAction(StrEnum):
     USER_UPDATE = "user.update"
     USER_REPLACE = "user.replace"
     USER_DELETE = "user.delete"
+    ROLE_CREATE = "role.create"
+    ROLE_UPDATE = "role.update"
+    ROLE_DELETE = "role.delete"
+    ROLE_GRANTS_UPDATE = "role.grants.update"
+    SCREEN_CREATE = "screen.create"
+    SCREEN_UPDATE = "screen.update"
+    SCREEN_DELETE = "screen.delete"
     AUDIT_READ = "audit.read"
     ACCESS_DENIED = "access.denied"
 
@@ -33,6 +37,8 @@ class AuditAction(StrEnum):
 class AuditResourceType(StrEnum):
     AUTH = "auth"
     USER = "user"
+    ROLE = "role"
+    SCREEN = "screen"
     AUDIT = "audit"
 
 
@@ -47,6 +53,10 @@ class PermissionName(StrEnum):
     USERS_READ = "S1.R"
     USERS_WRITE = "S1.W"
     AUDIT_READ = "S2.R"
+    ROLES_READ = "S3.R"
+    ROLES_WRITE = "S3.W"
+    SCREENS_READ = "S4.R"
+    SCREENS_WRITE = "S4.W"
 
 
 def enum_values(enum_cls: type[Enum]) -> list[str]:
@@ -56,23 +66,25 @@ def enum_values(enum_cls: type[Enum]) -> list[str]:
 
 # List-endpoint filter enums: each mirrors a base enum plus an ALL sentinel.
 # Kept separate from the base enum so "All" never leaks into persisted data
-# (e.g. a real user's status, or a recorded audit action).
+# (e.g. a real resource's status, or a recorded audit action).
 
 
-class UserStatusFilter(StrEnum):
+class StatusFilter(StrEnum):
     ALL = "All"
-    ACTIVE = UserStatus.ACTIVE.value
-    INACTIVE = UserStatus.INACTIVE.value
+    ACTIVE = Status.ACTIVE.value
+    INACTIVE = Status.INACTIVE.value
 
 
 class AuditActionFilter(StrEnum):
     ALL = "All"
     LOGIN_SUCCESS = AuditAction.LOGIN_SUCCESS.value
     LOGIN_FAILURE = AuditAction.LOGIN_FAILURE.value
+    LOGIN_LOCKOUT = AuditAction.LOGIN_LOCKOUT.value
     REFRESH_SUCCESS = AuditAction.REFRESH_SUCCESS.value
     REFRESH_FAILURE = AuditAction.REFRESH_FAILURE.value
     LOGOUT = AuditAction.LOGOUT.value
     OTP_REQUESTED = AuditAction.OTP_REQUESTED.value
+    OTP_THROTTLED = AuditAction.OTP_THROTTLED.value
     OTP_VERIFY_SUCCESS = AuditAction.OTP_VERIFY_SUCCESS.value
     OTP_VERIFY_FAILURE = AuditAction.OTP_VERIFY_FAILURE.value
     PASSWORD_RESET_SUCCESS = AuditAction.PASSWORD_RESET_SUCCESS.value
@@ -81,6 +93,13 @@ class AuditActionFilter(StrEnum):
     USER_UPDATE = AuditAction.USER_UPDATE.value
     USER_REPLACE = AuditAction.USER_REPLACE.value
     USER_DELETE = AuditAction.USER_DELETE.value
+    ROLE_CREATE = AuditAction.ROLE_CREATE.value
+    ROLE_UPDATE = AuditAction.ROLE_UPDATE.value
+    ROLE_DELETE = AuditAction.ROLE_DELETE.value
+    ROLE_GRANTS_UPDATE = AuditAction.ROLE_GRANTS_UPDATE.value
+    SCREEN_CREATE = AuditAction.SCREEN_CREATE.value
+    SCREEN_UPDATE = AuditAction.SCREEN_UPDATE.value
+    SCREEN_DELETE = AuditAction.SCREEN_DELETE.value
     AUDIT_READ = AuditAction.AUDIT_READ.value
     ACCESS_DENIED = AuditAction.ACCESS_DENIED.value
 
@@ -89,6 +108,8 @@ class AuditResourceTypeFilter(StrEnum):
     ALL = "All"
     AUTH = AuditResourceType.AUTH.value
     USER = AuditResourceType.USER.value
+    ROLE = AuditResourceType.ROLE.value
+    SCREEN = AuditResourceType.SCREEN.value
     AUDIT = AuditResourceType.AUDIT.value
 
 

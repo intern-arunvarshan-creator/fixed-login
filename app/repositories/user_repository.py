@@ -8,7 +8,7 @@ from sqlmodel import col
 
 from app.core.constants import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
 from app.database.session import get_session
-from app.models.enums import UserStatus
+from app.models.enums import Status
 from app.models.user import User
 
 
@@ -24,7 +24,7 @@ async def list_users(
     page: int = DEFAULT_PAGE,
     limit: int = DEFAULT_PAGE_SIZE,
     search: str | None = None,
-    status: UserStatus | None = None,
+    status: Status | None = None,
 ) -> tuple[list[User], int]:
     db = get_session()
     filters = []
@@ -64,6 +64,7 @@ async def update_user(user: User, data: dict[str, Any]) -> User:
 
 
 async def delete_user(user: User) -> None:
+    """Soft-delete: mark the user inactive rather than removing the row."""
     db = get_session()
-    await db.delete(user)
+    user.status = Status.INACTIVE
     await db.commit()

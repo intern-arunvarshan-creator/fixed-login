@@ -76,7 +76,7 @@ platform-admin/
 │   │   ├── database.py         # async engine, session factory, get_db dependency
 │   │   ├── session.py          # request-scoped session holder (get_session)
 │   │   └── scripts/
-│   │       ├── seed_admin.py   # create/reset a Platform Admin + seed catalog + assign super_admin
+│   │       ├── seed_admin.py   # create/reset Platform Admin(s) + seed catalog + assign super_admin (default: 5 dev admins)
 │   │       └── seed_rbac.py    # seed RBAC catalog + backfill super_admin (idempotent)
 │   ├── api/
 │   │   ├── deps.py             # auth + permission deps (get_current_admin, require_permission)
@@ -86,6 +86,8 @@ platform-admin/
 │   │       ├── health.py       # GET /api/v1/health
 │   │       ├── auth.py         # auth routes (login, refresh, OTP, password reset, logout)
 │   │       ├── users.py        # user CRUD routes
+│   │       ├── roles.py        # role CRUD routes
+│   │       ├── screens.py      # screen CRUD routes
 │   │       └── audit_logs.py   # GET /api/v1/audit-logs
 │   ├── core/
 │   │   ├── config.py           # Settings (from env)
@@ -101,30 +103,40 @@ platform-admin/
 │   │   └── logging.py          # one access-log line per request
 │   ├── models/
 │   │   ├── __init__.py         # re-exports models (registers tables for Alembic)
-│   │   ├── enums.py            # StrEnums (UserStatus, AuditAction, PermissionName, ...)
+│   │   ├── enums.py            # StrEnums (Status, AuditAction, PermissionName, ...)
 │   │   ├── user.py             # users table
 │   │   ├── platform_admin.py   # platform_admins table
 │   │   ├── role.py             # roles table
 │   │   ├── screen.py           # screens table
-│   │   ├── role_permission.py  # role → screen read/write grants
+│   │   ├── role_screen.py  # role → screen read/write grants
 │   │   ├── platform_admin_role.py  # admin → role assignments
+│   │   ├── password_reset_otp.py   # password-reset OTP state (expiry + throttle)
+│   │   ├── password_history.py     # previous hashed passwords (reuse check)
 │   │   └── audit_log.py        # audit_logs table
 │   ├── repositories/
 │   │   ├── auth_repository.py  # admin lookup
 │   │   ├── health_repository.py # DB liveness probe (SELECT 1)
 │   │   ├── user_repository.py  # all user SQL
+│   │   ├── role_repository.py  # all role SQL
+│   │   ├── screen_repository.py # all screen SQL (+ atomic super_admin grant on create)
 │   │   ├── rbac_repository.py  # effective permissions lookup (all RBAC SQL)
+│   │   ├── otp_repository.py   # password-reset OTP state SQL
+│   │   ├── password_history_repository.py  # password history SQL
 │   │   └── audit_repository.py # audit SQL (insert + list only — append-only)
 │   ├── schemas/
 │   │   ├── common.py           # ApiResponse envelope + Pagination
 │   │   ├── auth.py             # auth DTOs + result codes
 │   │   ├── user.py             # user DTOs + password policy + result codes
+│   │   ├── role.py             # role DTOs + result codes
+│   │   ├── screen.py           # screen DTOs + result codes
 │   │   ├── audit.py            # audit DTOs + result codes
 │   │   └── health.py           # health DTO + result codes
 │   ├── services/
 │   │   ├── auth_service.py     # login, refresh, password reset, admin resolution
 │   │   ├── health_service.py   # service health check
 │   │   ├── user_service.py     # user business rules
+│   │   ├── role_service.py     # role business rules
+│   │   ├── screen_service.py   # screen business rules
 │   │   ├── rbac_service.py     # effective permissions business rule
 │   │   └── audit_service.py    # audit recording (best-effort)
 │   └── utils/
@@ -186,13 +198,13 @@ and assign `super_admin` — all idempotent:
 
 ```bash
 uv run python app/database/scripts/seed_admin.py
-# defaults: admin@gmail.com / Admin@1234
+# defaults: seeds admin1..admin5@example.com / Admin@1234 (all super_admin)
 ```
 
-Or override the defaults:
+Or seed a single admin (e.g. production provisioning):
 
 ```bash
-uv run python app/database/scripts/seed_admin.py --username admin --email admin@gmail.com --password 'Admin@1234'
+uv run python app/database/scripts/seed_admin.py --email admin@example.com --username admin --password 'Admin@1234'
 ```
 
 Optionally backfill `super_admin` onto any other existing admins that have no roles
@@ -209,7 +221,7 @@ uv run app
 ```
 
 Server starts at `http://127.0.0.1:8000`. Sanity-check `GET /api/v1/health`, then log in at
-`POST /api/v1/auth/login` with `admin@gmail.com` / `Admin@1234`.
+`POST /api/v1/auth/login` with `admin1@example.com` / `Admin@1234`.
 
 See `docs/api.md` for the full walkthrough.
 

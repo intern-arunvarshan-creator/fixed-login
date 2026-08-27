@@ -5,7 +5,7 @@ from sqlalchemy import Column, func
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, SQLModel
 
-from app.models.enums import UserStatus, enum_values
+from app.models.enums import Status, enum_values
 from app.utils.time import utcnow
 
 
@@ -15,10 +15,10 @@ class User(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     email: str = Field(max_length=255, unique=True, index=True)
     name: str = Field(max_length=255)
-    status: UserStatus = Field(
-        default=UserStatus.ACTIVE,
+    status: Status = Field(
+        default=Status.ACTIVE,
         sa_column=Column(
-            SAEnum(UserStatus, name="user_status", values_callable=enum_values),
+            SAEnum(Status, name="status", values_callable=enum_values),
             nullable=False,
         ),
     )

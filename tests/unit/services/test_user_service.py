@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from app.exceptions.exceptions import AppError
-from app.models.enums import AuditAction, AuditResourceType, UserStatus
+from app.models.enums import AuditAction, AuditResourceType, Status
 from app.models.user import User
 from app.schemas.user import UserCreate, UserReplace, UserUpdate
 from app.services import user_service
@@ -17,7 +17,7 @@ def _user(email: str = "alice@example.com") -> User:
         id=uuid.uuid4(),
         email=email,
         name="Alice",
-        status=UserStatus.ACTIVE,
+        status=Status.ACTIVE,
         hashed_password="hash",
     )
 

@@ -11,7 +11,7 @@ from app.database.database import async_session_factory
 from app.models.platform_admin import PlatformAdmin
 from app.models.platform_admin_role import PlatformAdminRole
 from app.models.role import Role
-from app.models.role_permission import RolePermission
+from app.models.role_screen import RoleScreen
 from app.models.screen import Screen
 
 SUPER_ADMIN_ROLE_NAME = "super_admin"
@@ -19,6 +19,8 @@ SUPER_ADMIN_ROLE_NAME = "super_admin"
 SCREENS = [
     ("S1", "User Management", 1, True, True),
     ("S2", "Audit Logs", 2, True, False),
+    ("S3", "Role Management", 3, True, True),
+    ("S4", "Screen Management", 4, True, True),
 ]
 
 
@@ -79,18 +81,18 @@ async def _get_or_create_screen(db: AsyncSession, code: str, name: str, sort_ord
 
 async def _get_or_create_grant(
     db: AsyncSession, role_id: uuid.UUID, screen_code: str, *, read: bool, write: bool
-) -> RolePermission:
+) -> RoleScreen:
     """Return the role's screen grant, creating (and flushing) it if absent."""
     row = (
         await db.execute(
-            select(RolePermission).where(
-                col(RolePermission.role_id) == role_id,
-                col(RolePermission.screen_code) == screen_code,
+            select(RoleScreen).where(
+                col(RoleScreen.role_id) == role_id,
+                col(RoleScreen.screen_code) == screen_code,
             )
         )
     ).scalar_one_or_none()
     if row is None:
-        row = RolePermission(role_id=role_id, screen_code=screen_code, read=read, write=write)
+        row = RoleScreen(role_id=role_id, screen_code=screen_code, read=read, write=write)
         db.add(row)
         await db.flush()
     return row

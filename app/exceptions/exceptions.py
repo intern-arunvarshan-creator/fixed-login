@@ -25,14 +25,21 @@ class AuthenticationError(AppError):
 
     status_code = 401
     code = "E_401_NOT_AUTHENTICATED"
-    message = "Not authenticated"
+    message = "Your session has expired. Please login again."
 
 
 class InvalidCredentialsError(AuthenticationError):
     """Raised when the email/password does not match a Platform Admin."""
 
     code = "E_401_AUTH_INVALID_CREDENTIALS"
-    message = "Invalid email or password"
+    message = "Invalid user credentials."
+
+
+class AccountLockedError(AuthenticationError):
+    """Raised when the account is temporarily locked after repeated failures."""
+
+    code = "E_401_AUTH_ACCOUNT_LOCKED"
+    message = "Your account has been temporarily locked. Please try again after 15 minutes"
 
 
 class PermissionDeniedError(AppError):
@@ -47,7 +54,7 @@ class AccountInactiveError(PermissionDeniedError):
     """Raised when an otherwise-valid admin's account is inactive."""
 
     code = "E_403_AUTH_ACCOUNT_INACTIVE"
-    message = "This account is inactive"
+    message = "User did not authorise to access the Admin Portal."
 
 
 class UserNotFoundError(AppError):
@@ -56,6 +63,22 @@ class UserNotFoundError(AppError):
     status_code = 404
     code = "E_404_USR_NOT_FOUND"
     message = "User not found"
+
+
+class RoleNotFoundError(AppError):
+    """Raised when a Role does not exist."""
+
+    status_code = 404
+    code = "E_404_ROL_NOT_FOUND"
+    message = "Role not found"
+
+
+class ScreenNotFoundError(AppError):
+    """Raised when a Screen does not exist."""
+
+    status_code = 404
+    code = "E_404_SCR_NOT_FOUND"
+    message = "Screen not found"
 
 
 class ConflictError(AppError):
@@ -76,12 +99,55 @@ class EmailExistsError(ConflictError):
         super().__init__(data=field_errors([("email", self.message)]))
 
 
+class RoleNameExistsError(ConflictError):
+    """Raised when a Role with the same name already exists."""
+
+    code = "E_409_ROL_NAME_EXISTS"
+    message = "Role name already exists"
+
+    def __init__(self) -> None:
+        super().__init__(data=field_errors([("name", self.message)]))
+
+
+class ScreenCodeExistsError(ConflictError):
+    """Raised when a Screen with the same code already exists."""
+
+    code = "E_409_SCR_CODE_EXISTS"
+    message = "Screen code already exists"
+
+    def __init__(self) -> None:
+        super().__init__(data=field_errors([("code", self.message)]))
+
+
+class ProtectedResourceError(ConflictError):
+    """Raised when a request tries to delete or deactivate a protected resource."""
+
+    code = "E_409_PROTECTED_RESOURCE"
+    message = "This resource is protected and cannot be deleted or deactivated"
+
+
 class InvalidOtpError(AppError):
     """Raised when the password-reset OTP is wrong or expired."""
 
     status_code = 400
     code = "E_400_AUTH_INVALID_OTP"
     message = "Invalid or expired OTP"
+
+
+class OtpThrottledError(AppError):
+    """Raised when password-reset OTP requests exceed the throttle window."""
+
+    status_code = 429
+    code = "E_429_AUTH_OTP_THROTTLED"
+    message = "Too many OTP requests. Please try again later."
+
+
+class PasswordReuseError(AppError):
+    """Raised when the new password matches a previously used password."""
+
+    status_code = 400
+    code = "E_400_AUTH_PASSWORD_REUSED"
+    message = "New password must not match a previous password"
 
 
 class PasswordResetFailedError(AppError):

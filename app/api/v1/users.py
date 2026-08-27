@@ -14,8 +14,8 @@ from app.core.constants import (
 )
 from app.models.enums import (
     PermissionName,
-    UserStatus,
-    UserStatusFilter,
+    Status,
+    StatusFilter,
     resolve_filter,
 )
 from app.schemas.common import ApiResponse, ListData, build_list_data
@@ -55,7 +55,7 @@ async def list_users(
     page: int = Query(DEFAULT_PAGE, ge=MIN_PAGE),
     limit: int = Query(DEFAULT_PAGE_SIZE, ge=MIN_PAGE_SIZE, le=MAX_PAGE_SIZE),
     search: str | None = Query(None, description="Search by name or email"),
-    status: UserStatusFilter = Query(UserStatusFilter.ALL, description="Filter by user status"),
+    status: StatusFilter = Query(StatusFilter.ALL, description="Filter by user status"),
     _: None = Depends(require_permission(PermissionName.USERS_READ)),
 ) -> ApiResponse[ListData[UserRead]]:
     """List users, paginated and optionally filtered by search text or status."""
@@ -63,7 +63,7 @@ async def list_users(
         page=page,
         limit=limit,
         search=search,
-        status=resolve_filter(status, UserStatus),
+        status=resolve_filter(status, Status),
     )
     return ApiResponse(
         code=CODE_LISTED,

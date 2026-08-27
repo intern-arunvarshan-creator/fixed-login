@@ -5,7 +5,12 @@ from fastapi.security import HTTPAuthorizationCredentials
 
 from app.api.audit import record_audit
 from app.api.deps import bearer_scheme, get_current_admin
-from app.exceptions.exceptions import AppError, AuthenticationError
+from app.exceptions.exceptions import (
+    AccountLockedError,
+    AppError,
+    AuthenticationError,
+    OtpThrottledError,
+)
 from app.models.enums import ActorType, AuditAction, AuditResourceType
 from app.models.platform_admin import PlatformAdmin
 from app.schemas.auth import (
@@ -46,11 +51,16 @@ async def login(
     try:
         token = await auth_service.login(credentials)
     except AppError as exc:
+        action = (
+            AuditAction.LOGIN_LOCKOUT
+            if isinstance(exc, AccountLockedError)
+            else AuditAction.LOGIN_FAILURE
+        )
         await record_audit(
             request=request,
             actor=credentials.email,
             actor_type=ActorType.ADMIN.value,
-            action=AuditAction.LOGIN_FAILURE,
+            action=action,
             resource_type=AuditResourceType.AUTH,
             resource_id=credentials.email,
             details={"error_code": exc.code},
@@ -115,7 +125,20 @@ async def refresh(payload: RefreshRequest, request: Request) -> ApiResponse[Toke
 async def generate_otp(payload: GenerateOtpRequest, request: Request) -> ApiResponse[None]:
     """Validate that the admin account exists and is active before an OTP is issued."""
     body = payload.model_dump(mode="json", exclude_unset=True)
-    await auth_service.generate_otp(payload)
+    try:
+        await auth_service.generate_otp(payload)
+    except OtpThrottledError as exc:
+        await record_audit(
+            request=request,
+            actor=payload.email,
+            actor_type=ActorType.ADMIN.value,
+            action=AuditAction.OTP_THROTTLED,
+            resource_type=AuditResourceType.AUTH,
+            resource_id=payload.email,
+            details={"error_code": exc.code},
+            payload=body,
+        )
+        raise
     response: ApiResponse[None] = ApiResponse(code=CODE_OTP_SENT, message=MSG_OTP_SENT, data=None)
     await record_audit(
         request=request,
