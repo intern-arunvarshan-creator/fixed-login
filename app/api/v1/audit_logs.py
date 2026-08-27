@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Depends, Query, Request
 
-from app.api.audit import audit
+from app.api.audit import record_audit
 from app.api.deps import get_current_admin, require_permission
 from app.core.constants import (
     DEFAULT_PAGE,
@@ -34,10 +34,6 @@ router = APIRouter(tags=["Audit"])
     response_model=ApiResponse[ListData[AuditLogRead]],
     summary="List audit logs",
 )
-@audit(
-    action=AuditAction.AUDIT_READ,
-    resource_type=AuditResourceType.AUDIT,
-)
 async def list_audit_logs(
     request: Request,
     page: int = Query(DEFAULT_PAGE, ge=MIN_PAGE),
@@ -62,8 +58,17 @@ async def list_audit_logs(
         resource_type=resolve_filter(resource_type, AuditResourceType),
         actor_type=resolve_filter(actor_type, ActorType),
     )
-    return ApiResponse(
+    response: ApiResponse[ListData[AuditLogRead]] = ApiResponse(
         code=CODE_LISTED,
         message=MSG_LISTED,
         data=build_list_data(AuditLogRead, entries, page=page, limit=limit, total=total),
     )
+    await record_audit(
+        request=request,
+        actor=admin.email,
+        actor_type=ActorType.ADMIN.value,
+        action=AuditAction.AUDIT_READ,
+        resource_type=AuditResourceType.AUDIT,
+        response=response.model_dump(mode="json"),
+    )
+    return response
