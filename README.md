@@ -76,7 +76,7 @@ platform-admin/
 │   │   ├── database.py         # async engine, session factory, get_db dependency
 │   │   ├── session.py          # request-scoped session holder (get_session)
 │   │   └── scripts/
-│   │       ├── seed_admin.py   # create/reset a Platform Admin + seed catalog + assign super_admin
+│   │       ├── seed_admin.py   # create/reset Platform Admin(s) + seed catalog + assign super_admin (default: 5 dev admins)
 │   │       └── seed_rbac.py    # seed RBAC catalog + backfill super_admin (idempotent)
 │   ├── api/
 │   │   ├── deps.py             # auth + permission deps (get_current_admin, require_permission)
@@ -108,8 +108,10 @@ platform-admin/
 │   │   ├── platform_admin.py   # platform_admins table
 │   │   ├── role.py             # roles table
 │   │   ├── screen.py           # screens table
-│   │   ├── role_permission.py  # role → screen read/write grants
+│   │   ├── role_screen.py  # role → screen read/write grants
 │   │   ├── platform_admin_role.py  # admin → role assignments
+│   │   ├── password_reset_otp.py   # password-reset OTP state (expiry + throttle)
+│   │   ├── password_history.py     # previous hashed passwords (reuse check)
 │   │   └── audit_log.py        # audit_logs table
 │   ├── repositories/
 │   │   ├── auth_repository.py  # admin lookup
@@ -118,6 +120,8 @@ platform-admin/
 │   │   ├── role_repository.py  # all role SQL
 │   │   ├── screen_repository.py # all screen SQL (+ atomic super_admin grant on create)
 │   │   ├── rbac_repository.py  # effective permissions lookup (all RBAC SQL)
+│   │   ├── otp_repository.py   # password-reset OTP state SQL
+│   │   ├── password_history_repository.py  # password history SQL
 │   │   └── audit_repository.py # audit SQL (insert + list only — append-only)
 │   ├── schemas/
 │   │   ├── common.py           # ApiResponse envelope + Pagination

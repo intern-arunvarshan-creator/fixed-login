@@ -9,7 +9,7 @@ from sqlmodel import col
 from app.core.constants import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
 from app.database.session import get_session
 from app.models.enums import Status
-from app.models.role_permission import RolePermission
+from app.models.role_screen import RoleScreen
 from app.models.screen import Screen
 
 
@@ -19,7 +19,7 @@ async def create_screen(screen: Screen, super_admin_role_id: uuid.UUID | None = 
     db.add(screen)
     if super_admin_role_id is not None:
         db.add(
-            RolePermission(
+            RoleScreen(
                 role_id=super_admin_role_id,
                 screen_code=screen.code,
                 read=True,
