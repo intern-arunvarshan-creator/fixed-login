@@ -471,8 +471,11 @@ async def test_verify_otp_accepts_correct_otp() -> None:
             new=AsyncMock(return_value=admin),
         ),
         patch.object(auth_service.otp_repository, "get", new=AsyncMock(return_value=row)),
+        patch.object(auth_service.otp_repository, "save", new=AsyncMock(return_value=row)) as save,
     ):
         await auth_service.verify_otp(VerifyOtpRequest(email="admin@example.com", otp="12345"))
+    assert row.verified is True
+    save.assert_awaited_once()
 
 
 async def test_verify_otp_rejects_wrong_otp() -> None:
@@ -558,6 +561,19 @@ async def test_update_password_success_clears_lockout_and_session() -> None:
             new=AsyncMock(return_value=admin),
         ),
         patch.object(
+            auth_service.otp_repository,
+            "get",
+            new=AsyncMock(
+                return_value=PasswordResetOtp(
+                    email="admin@example.com",
+                    expires_at=utcnow() + timedelta(minutes=5),
+                    request_count=1,
+                    window_started_at=utcnow(),
+                    verified=True,
+                )
+            ),
+        ),
+        patch.object(
             auth_service.password_history_repository,
             "recent_for_admin",
             new=AsyncMock(return_value=[]),
@@ -579,6 +595,11 @@ async def test_update_password_success_clears_lockout_and_session() -> None:
             "update_admin_password",
             new=AsyncMock(return_value=admin),
         ),
+        patch.object(
+            auth_service.otp_repository,
+            "delete",
+            new=AsyncMock(return_value=None),
+        ) as delete_otp,
     ):
         result = await auth_service.update_password(
             UpdatePasswordRequest(
@@ -591,6 +612,7 @@ async def test_update_password_success_clears_lockout_and_session() -> None:
     assert admin.failed_login_attempts == 0
     assert admin.locked_until is None
     assert admin.current_refresh_jti is None
+    delete_otp.assert_awaited_once_with("admin@example.com")
 
 
 async def test_update_password_rejects_reused_password() -> None:
@@ -601,6 +623,19 @@ async def test_update_password_rejects_reused_password() -> None:
             auth_service.auth_repository,
             "get_admin_by_email",
             new=AsyncMock(return_value=admin),
+        ),
+        patch.object(
+            auth_service.otp_repository,
+            "get",
+            new=AsyncMock(
+                return_value=PasswordResetOtp(
+                    email="admin@example.com",
+                    expires_at=utcnow() + timedelta(minutes=5),
+                    request_count=1,
+                    window_started_at=utcnow(),
+                    verified=True,
+                )
+            ),
         ),
         patch.object(
             auth_service.password_history_repository,
@@ -617,3 +652,59 @@ async def test_update_password_rejects_reused_password() -> None:
                     confirm_password="S3cureP@ss",
                 )
             )
+
+
+async def test_update_password_rejects_unverified_otp() -> None:
+    admin = _admin()
+    row = PasswordResetOtp(
+        email="admin@example.com",
+        expires_at=utcnow() + timedelta(minutes=5),
+        request_count=1,
+        window_started_at=utcnow(),
+        verified=False,
+    )
+    with (
+        patch.object(
+            auth_service.auth_repository,
+            "get_admin_by_email",
+            new=AsyncMock(return_value=admin),
+        ),
+        patch.object(auth_service.otp_repository, "get", new=AsyncMock(return_value=row)),
+    ):
+        with pytest.raises(AppError) as exc_info:
+            await auth_service.update_password(
+                UpdatePasswordRequest(
+                    email="admin@example.com",
+                    new_password="S3cureP@ss",
+                    confirm_password="S3cureP@ss",
+                )
+            )
+    assert exc_info.value.code == "E_400_AUTH_PASSWORD_RESET_FAILED"
+
+
+async def test_update_password_rejects_expired_otp() -> None:
+    admin = _admin()
+    row = PasswordResetOtp(
+        email="admin@example.com",
+        expires_at=utcnow() - timedelta(minutes=1),
+        request_count=1,
+        window_started_at=utcnow(),
+        verified=True,
+    )
+    with (
+        patch.object(
+            auth_service.auth_repository,
+            "get_admin_by_email",
+            new=AsyncMock(return_value=admin),
+        ),
+        patch.object(auth_service.otp_repository, "get", new=AsyncMock(return_value=row)),
+    ):
+        with pytest.raises(AppError) as exc_info:
+            await auth_service.update_password(
+                UpdatePasswordRequest(
+                    email="admin@example.com",
+                    new_password="S3cureP@ss",
+                    confirm_password="S3cureP@ss",
+                )
+            )
+    assert exc_info.value.code == "E_400_AUTH_PASSWORD_RESET_FAILED"

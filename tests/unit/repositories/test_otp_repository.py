@@ -24,3 +24,13 @@ async def test_save() -> None:
     with patch.object(otp_repository, "get_session", return_value=db):
         assert await otp_repository.save(row) is row
     db.commit.assert_awaited_once()
+
+
+async def test_delete() -> None:
+    db = MagicMock()
+    db.execute = AsyncMock()
+    db.commit = AsyncMock()
+    with patch.object(otp_repository, "get_session", return_value=db):
+        await otp_repository.delete("admin@example.com")
+    db.execute.assert_awaited_once()
+    db.commit.assert_awaited_once()

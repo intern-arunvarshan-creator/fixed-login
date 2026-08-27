@@ -185,19 +185,25 @@ async def generate_otp(payload: GenerateOtpRequest) -> None:
     if row is None:
         await otp_repository.save(
             PasswordResetOtp(
-                email=payload.email, expires_at=expiry, request_count=1, window_started_at=now
+                email=payload.email,
+                expires_at=expiry,
+                request_count=1,
+                window_started_at=now,
+                verified=False,
             )
         )
     elif now >= row.window_started_at + window:
         row.expires_at = expiry
         row.request_count = 1
         row.window_started_at = now
+        row.verified = False
         await otp_repository.save(row)
     elif row.request_count >= settings.otp_max_requests_per_window:
         raise OtpThrottledError()
     else:
         row.request_count += 1
         row.expires_at = expiry
+        row.verified = False
         await otp_repository.save(row)
 
 
@@ -210,6 +216,8 @@ async def verify_otp(payload: VerifyOtpRequest) -> None:
     row = await otp_repository.get(payload.email)
     if row is None or utcnow() >= row.expires_at:
         raise InvalidOtpError()
+    row.verified = True
+    await otp_repository.save(row)
 
 
 @traced("auth_service.update_password")
@@ -217,6 +225,9 @@ async def update_password(payload: UpdatePasswordRequest) -> PlatformAdmin:
     """Set a new password, failing opaquely for unknown or inactive accounts."""
     admin = await auth_repository.get_admin_by_email(payload.email)
     if admin is None or admin.status != Status.ACTIVE:
+        raise PasswordResetFailedError()
+    row = await otp_repository.get(payload.email)
+    if row is None or not row.verified or utcnow() >= row.expires_at:
         raise PasswordResetFailedError()
     recent = await password_history_repository.recent_for_admin(
         admin.id, settings.password_history_depth
@@ -230,6 +241,8 @@ async def update_password(payload: UpdatePasswordRequest) -> PlatformAdmin:
     admin.failed_login_attempts = 0
     admin.locked_until = None
     admin.current_refresh_jti = None
-    return await auth_repository.update_admin_password(
+    updated = await auth_repository.update_admin_password(
         admin=admin, hashed_password=hash_password(payload.new_password)
     )
+    await otp_repository.delete(payload.email)
+    return updated
