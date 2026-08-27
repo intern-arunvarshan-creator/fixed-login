@@ -7,7 +7,7 @@ import pytest
 from jose import JWTError
 
 from app.exceptions.exceptions import AppError
-from app.models.enums import AdminStatus
+from app.models.enums import Status
 from app.models.platform_admin import PlatformAdmin
 from app.schemas.auth import (
     GenerateOtpRequest,
@@ -25,7 +25,7 @@ async def test_login_success() -> None:
         username="admin",
         email="admin@example.com",
         hashed_password="hash",
-        status=AdminStatus.ACTIVE,
+        status=Status.ACTIVE,
     )
     with (
         patch.object(
@@ -68,7 +68,7 @@ async def test_login_inactive_account() -> None:
         username="admin",
         email="admin@example.com",
         hashed_password="hash",
-        status=AdminStatus.INACTIVE,
+        status=Status.INACTIVE,
     )
     with (
         patch.object(
@@ -182,7 +182,7 @@ async def test_get_admin_by_id_inactive_raises() -> None:
         username="admin",
         email="admin@example.com",
         hashed_password="hash",
-        status=AdminStatus.INACTIVE,
+        status=Status.INACTIVE,
     )
     with patch.object(
         auth_service.auth_repository,
@@ -208,7 +208,7 @@ async def test_generate_otp_returns_for_inactive_admin() -> None:
         username="admin",
         email="admin@example.com",
         hashed_password="hash",
-        status=AdminStatus.INACTIVE,
+        status=Status.INACTIVE,
     )
     with patch.object(
         auth_service.auth_repository,
@@ -224,7 +224,7 @@ async def test_generate_otp_returns_for_active_admin() -> None:
         username="admin",
         email="admin@example.com",
         hashed_password="hash",
-        status=AdminStatus.ACTIVE,
+        status=Status.ACTIVE,
     )
     with patch.object(
         auth_service.auth_repository,

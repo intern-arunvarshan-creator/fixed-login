@@ -58,6 +58,22 @@ class UserNotFoundError(AppError):
     message = "User not found"
 
 
+class RoleNotFoundError(AppError):
+    """Raised when a Role does not exist."""
+
+    status_code = 404
+    code = "E_404_ROL_NOT_FOUND"
+    message = "Role not found"
+
+
+class ScreenNotFoundError(AppError):
+    """Raised when a Screen does not exist."""
+
+    status_code = 404
+    code = "E_404_SCR_NOT_FOUND"
+    message = "Screen not found"
+
+
 class ConflictError(AppError):
     """Raised when a request violates a data constraint."""
 
@@ -74,6 +90,33 @@ class EmailExistsError(ConflictError):
 
     def __init__(self) -> None:
         super().__init__(data=field_errors([("email", self.message)]))
+
+
+class RoleNameExistsError(ConflictError):
+    """Raised when a Role with the same name already exists."""
+
+    code = "E_409_ROL_NAME_EXISTS"
+    message = "Role name already exists"
+
+    def __init__(self) -> None:
+        super().__init__(data=field_errors([("name", self.message)]))
+
+
+class ScreenCodeExistsError(ConflictError):
+    """Raised when a Screen with the same code already exists."""
+
+    code = "E_409_SCR_CODE_EXISTS"
+    message = "Screen code already exists"
+
+    def __init__(self) -> None:
+        super().__init__(data=field_errors([("code", self.message)]))
+
+
+class ProtectedResourceError(ConflictError):
+    """Raised when a request tries to delete or deactivate a protected resource."""
+
+    code = "E_409_PROTECTED_RESOURCE"
+    message = "This resource is protected and cannot be deleted or deactivated"
 
 
 class InvalidOtpError(AppError):

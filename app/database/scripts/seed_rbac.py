@@ -19,6 +19,8 @@ SUPER_ADMIN_ROLE_NAME = "super_admin"
 SCREENS = [
     ("S1", "User Management", 1, True, True),
     ("S2", "Audit Logs", 2, True, False),
+    ("S3", "Role Management", 3, True, True),
+    ("S4", "Screen Management", 4, True, True),
 ]
 
 

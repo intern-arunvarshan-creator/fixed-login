@@ -84,6 +84,8 @@ async def _record_denial(
 _SCREEN_RESOURCE_TYPES = {
     "S1": AuditResourceType.USER,
     "S2": AuditResourceType.AUDIT,
+    "S3": AuditResourceType.ROLE,
+    "S4": AuditResourceType.SCREEN,
 }
 
 

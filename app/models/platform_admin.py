@@ -5,7 +5,7 @@ from sqlalchemy import Column, func
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, SQLModel
 
-from app.models.enums import AdminStatus, enum_values
+from app.models.enums import Status, enum_values
 from app.utils.time import utcnow
 
 
@@ -16,10 +16,10 @@ class PlatformAdmin(SQLModel, table=True):
     email: str = Field(max_length=255, unique=True, index=True)
     username: str = Field(max_length=255, unique=True, index=True)
     hashed_password: str
-    status: AdminStatus = Field(
-        default=AdminStatus.ACTIVE,
+    status: Status = Field(
+        default=Status.ACTIVE,
         sa_column=Column(
-            SAEnum(AdminStatus, name="admin_status", values_callable=enum_values),
+            SAEnum(Status, name="status", values_callable=enum_values),
             nullable=False,
         ),
     )

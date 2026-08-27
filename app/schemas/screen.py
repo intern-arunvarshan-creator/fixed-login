@@ -1,0 +1,55 @@
+import uuid
+from datetime import datetime
+from functools import partial
+from typing import Annotated
+
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field
+
+from app.models.enums import Status
+from app.utils.validate import validate_slug_format
+
+ScreenCodeStr = Annotated[
+    str,
+    Field(min_length=1, max_length=50, examples=["S5"]),
+    AfterValidator(partial(validate_slug_format, field_label="Code")),
+]
+
+CODE_CREATED = "S_201_SCR_CREATED"
+MSG_CREATED = "Screen created successfully"
+CODE_LISTED = "S_200_SCR_LIST_OK"
+MSG_LISTED = "Screens fetched successfully"
+CODE_FETCHED = "S_200_SCR_FETCH_OK"
+MSG_FETCHED = "Screen fetched successfully"
+CODE_UPDATED = "S_200_SCR_UPDATED"
+MSG_UPDATED = "Screen updated successfully"
+CODE_DELETED = "S_200_SCR_DELETED"
+MSG_DELETED = "Screen deleted successfully"
+
+
+class ScreenCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=255, examples=["Reports"])
+    code: ScreenCodeStr | None = Field(
+        default=None, description="Optional; auto-generated as the next S{n} when omitted."
+    )
+    sort_order: int = Field(default=0, ge=0)
+    status: Status = Status.ACTIVE
+
+
+class ScreenUpdate(BaseModel):
+    """Partial update (PATCH) — the code is immutable and cannot be changed."""
+
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    sort_order: int | None = Field(default=None, ge=0)
+    status: Status | None = None
+
+
+class ScreenRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    code: str
+    name: str
+    sort_order: int
+    status: Status
+    created_at: datetime
+    updated_at: datetime

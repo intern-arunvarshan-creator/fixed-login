@@ -3,7 +3,7 @@
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from app.models.enums import UserStatus
+from app.models.enums import Status
 from app.models.user import User
 from app.repositories import user_repository
 
@@ -13,7 +13,7 @@ def _user() -> User:
         id=uuid.uuid4(),
         email="alice@example.com",
         name="Alice",
-        status=UserStatus.ACTIVE,
+        status=Status.ACTIVE,
         hashed_password="hash",
     )
 
@@ -54,7 +54,7 @@ async def test_list_users_with_filters() -> None:
     db.execute.return_value.scalars.return_value.all.return_value = []
     with patch.object(user_repository, "get_session", return_value=db):
         users, total = await user_repository.list_users(
-            page=1, limit=20, search="a", status=UserStatus.ACTIVE
+            page=1, limit=20, search="a", status=Status.ACTIVE
         )
     assert users == []
     assert total == 1
@@ -73,12 +73,11 @@ async def test_update_user_applies_fields_and_commits() -> None:
     db.refresh.assert_awaited_once_with(user)
 
 
-async def test_delete_user_commits() -> None:
+async def test_delete_user_soft_deletes() -> None:
     db = MagicMock()
-    db.delete = AsyncMock()
     db.commit = AsyncMock()
     user = _user()
     with patch.object(user_repository, "get_session", return_value=db):
         await user_repository.delete_user(user)
-    db.delete.assert_awaited_once_with(user)
+    assert user.status is Status.INACTIVE
     db.commit.assert_awaited_once()

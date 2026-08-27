@@ -21,7 +21,7 @@ from app.exceptions.exceptions import (
     InvalidOtpError,
     PasswordResetFailedError,
 )
-from app.models.enums import AdminStatus
+from app.models.enums import Status
 from app.models.platform_admin import PlatformAdmin
 from app.repositories import auth_repository, revoked_token_repository
 from app.schemas.auth import (
@@ -45,7 +45,7 @@ async def login(credentials: LoginRequest) -> TokenResponse:
         plain=credentials.password, hashed=admin.hashed_password
     ):
         raise InvalidCredentialsError()
-    if admin.status != AdminStatus.ACTIVE:
+    if admin.status != Status.ACTIVE:
         raise AccountInactiveError()
     permissions = await rbac_service.permissions_for_admin(admin.id)
     return await _issue_tokens(admin, permissions=sorted(permissions))
@@ -72,7 +72,7 @@ async def get_admin_by_id(admin_id: uuid.UUID) -> PlatformAdmin:
     admin = await auth_repository.get_admin_by_id(admin_id)
     if admin is None:
         raise AuthenticationError()
-    if admin.status != AdminStatus.ACTIVE:
+    if admin.status != Status.ACTIVE:
         raise AccountInactiveError()
     return admin
 
@@ -134,7 +134,7 @@ async def logout(access_token: str) -> None:
 async def generate_otp(payload: GenerateOtpRequest) -> None:
     """Request an OTP, returning normally for unknown/inactive accounts to avoid enumeration."""
     admin = await auth_repository.get_admin_by_email(payload.email)
-    if admin is None or admin.status != AdminStatus.ACTIVE:
+    if admin is None or admin.status != Status.ACTIVE:
         return
 
 
@@ -142,7 +142,7 @@ async def generate_otp(payload: GenerateOtpRequest) -> None:
 async def verify_otp(payload: VerifyOtpRequest) -> None:
     """Verify the OTP, returning one opaque failure for any invalid case."""
     admin = await auth_repository.get_admin_by_email(payload.email)
-    if admin is None or admin.status != AdminStatus.ACTIVE or payload.otp != OTP_CODE:
+    if admin is None or admin.status != Status.ACTIVE or payload.otp != OTP_CODE:
         raise InvalidOtpError()
 
 
@@ -150,7 +150,7 @@ async def verify_otp(payload: VerifyOtpRequest) -> None:
 async def update_password(payload: UpdatePasswordRequest) -> PlatformAdmin:
     """Set a new password, failing opaquely for unknown or inactive accounts."""
     admin = await auth_repository.get_admin_by_email(payload.email)
-    if admin is None or admin.status != AdminStatus.ACTIVE:
+    if admin is None or admin.status != Status.ACTIVE:
         raise PasswordResetFailedError()
     return await auth_repository.update_admin_password(
         admin=admin, hashed_password=hash_password(payload.new_password)

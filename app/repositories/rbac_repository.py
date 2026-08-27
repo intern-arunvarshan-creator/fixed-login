@@ -7,18 +7,26 @@ from sqlalchemy import select
 from sqlmodel import col
 
 from app.database.session import get_session
+from app.models.enums import Status
 from app.models.platform_admin_role import PlatformAdminRole
 from app.models.role import Role
 from app.models.role_permission import RolePermission
+from app.models.screen import Screen
 
 
 async def screen_grants_for_admin(admin_id: uuid.UUID) -> set[tuple[str, bool, bool]]:
-    """Return the (screen code, read, write) grants for the admin's roles."""
+    """Return the (screen code, read, write) grants for the admin's active roles/screens."""
     db = get_session()
     result = await db.execute(
         select(col(RolePermission.screen_code), col(RolePermission.read), col(RolePermission.write))
         .join(PlatformAdminRole, col(PlatformAdminRole.role_id) == col(RolePermission.role_id))
-        .where(col(PlatformAdminRole.platform_admin_id) == admin_id)
+        .join(Role, col(Role.id) == col(RolePermission.role_id))
+        .join(Screen, col(Screen.code) == col(RolePermission.screen_code))
+        .where(
+            col(PlatformAdminRole.platform_admin_id) == admin_id,
+            col(Role.status) == Status.ACTIVE,
+            col(Screen.status) == Status.ACTIVE,
+        )
     )
     grants: set[tuple[str, bool, bool]] = set()
     for row in result.all():

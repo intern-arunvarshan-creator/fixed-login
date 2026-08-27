@@ -86,6 +86,8 @@ platform-admin/
 │   │       ├── health.py       # GET /api/v1/health
 │   │       ├── auth.py         # auth routes (login, refresh, OTP, password reset, logout)
 │   │       ├── users.py        # user CRUD routes
+│   │       ├── roles.py        # role CRUD routes
+│   │       ├── screens.py      # screen CRUD routes
 │   │       └── audit_logs.py   # GET /api/v1/audit-logs
 │   ├── core/
 │   │   ├── config.py           # Settings (from env)
@@ -101,7 +103,7 @@ platform-admin/
 │   │   └── logging.py          # one access-log line per request
 │   ├── models/
 │   │   ├── __init__.py         # re-exports models (registers tables for Alembic)
-│   │   ├── enums.py            # StrEnums (UserStatus, AuditAction, PermissionName, ...)
+│   │   ├── enums.py            # StrEnums (Status, AuditAction, PermissionName, ...)
 │   │   ├── user.py             # users table
 │   │   ├── platform_admin.py   # platform_admins table
 │   │   ├── role.py             # roles table
@@ -113,18 +115,24 @@ platform-admin/
 │   │   ├── auth_repository.py  # admin lookup
 │   │   ├── health_repository.py # DB liveness probe (SELECT 1)
 │   │   ├── user_repository.py  # all user SQL
+│   │   ├── role_repository.py  # all role SQL
+│   │   ├── screen_repository.py # all screen SQL (+ atomic super_admin grant on create)
 │   │   ├── rbac_repository.py  # effective permissions lookup (all RBAC SQL)
 │   │   └── audit_repository.py # audit SQL (insert + list only — append-only)
 │   ├── schemas/
 │   │   ├── common.py           # ApiResponse envelope + Pagination
 │   │   ├── auth.py             # auth DTOs + result codes
 │   │   ├── user.py             # user DTOs + password policy + result codes
+│   │   ├── role.py             # role DTOs + result codes
+│   │   ├── screen.py           # screen DTOs + result codes
 │   │   ├── audit.py            # audit DTOs + result codes
 │   │   └── health.py           # health DTO + result codes
 │   ├── services/
 │   │   ├── auth_service.py     # login, refresh, password reset, admin resolution
 │   │   ├── health_service.py   # service health check
 │   │   ├── user_service.py     # user business rules
+│   │   ├── role_service.py     # role business rules
+│   │   ├── screen_service.py   # screen business rules
 │   │   ├── rbac_service.py     # effective permissions business rule
 │   │   └── audit_service.py    # audit recording (best-effort)
 │   └── utils/

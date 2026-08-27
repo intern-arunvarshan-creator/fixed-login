@@ -6,7 +6,7 @@ from typing import Annotated
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, EmailStr, Field
 
-from app.models.enums import UserStatus
+from app.models.enums import Status
 from app.utils.validate import validate_slug_format
 
 PASSWORD_PATTERN = re.compile(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,13}$")
@@ -58,7 +58,7 @@ class UserCreate(BaseModel):
     name: NameStr
     email: EmailStr
     password: PasswordStr
-    status: UserStatus = UserStatus.ACTIVE
+    status: Status = Status.ACTIVE
 
 
 class UserUpdate(BaseModel):
@@ -66,7 +66,7 @@ class UserUpdate(BaseModel):
 
     name: NameStr | None = None
     email: EmailStr | None = None
-    status: UserStatus | None = None
+    status: Status | None = None
 
 
 class UserReplace(BaseModel):
@@ -83,6 +83,6 @@ class UserRead(BaseModel):
     id: uuid.UUID
     name: str
     email: EmailStr
-    status: UserStatus
+    status: Status
     created_at: datetime
     updated_at: datetime

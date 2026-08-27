@@ -5,7 +5,7 @@ import uuid
 from app.core.constants import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
 from app.core.security import hash_password
 from app.exceptions.exceptions import EmailExistsError, UserNotFoundError
-from app.models.enums import AuditAction, AuditResourceType, UserStatus
+from app.models.enums import AuditAction, AuditResourceType, Status
 from app.models.user import User
 from app.repositories import user_repository
 from app.schemas.user import UserCreate, UserReplace, UserUpdate
@@ -43,7 +43,7 @@ async def list_users(
     page: int = DEFAULT_PAGE,
     limit: int = DEFAULT_PAGE_SIZE,
     search: str | None = None,
-    status: UserStatus | None = None,
+    status: Status | None = None,
 ) -> tuple[list[User], int]:
     return await user_repository.list_users(page=page, limit=limit, search=search, status=status)
 
