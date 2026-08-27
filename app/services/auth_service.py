@@ -1,7 +1,7 @@
 """Auth business rules (login, token refresh, admin resolution)."""
 
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 from typing import Any
 
 from jose import JWTError
@@ -32,7 +32,6 @@ from app.repositories import (
     auth_repository,
     otp_repository,
     password_history_repository,
-    revoked_token_repository,
 )
 from app.schemas.auth import (
     GenerateOtpRequest,
@@ -116,9 +115,6 @@ async def get_admin_by_id(admin_id: uuid.UUID) -> PlatformAdmin:
 
 async def get_admin_from_payload(payload: dict[str, Any]) -> PlatformAdmin:
     """Resolve and validate the admin behind a decoded access/refresh token payload."""
-    jti = payload.get("jti")
-    if jti is not None and await revoked_token_repository.is_revoked(jti):
-        raise AuthenticationError()
     try:
         admin_id = uuid.UUID(str(payload.get("user_id")))
     except ValueError:
@@ -151,33 +147,15 @@ async def refresh(payload: RefreshRequest) -> TokenResponse:
     return await _issue_session(admin, permissions=sorted(permissions))
 
 
-def _epoch_to_naive_utc(timestamp: int) -> datetime:
-    return datetime.fromtimestamp(timestamp, tz=UTC).replace(tzinfo=None)
-
-
 @traced("auth_service.logout")
 async def logout(access_token: str) -> None:
-    """Revoke the access token and its linked refresh token so neither works again."""
+    """End the current session so neither the access nor refresh token works again."""
     try:
         payload = decode_token(access_token)
     except JWTError:
         raise AuthenticationError() from None
     if payload.get("type") != "access":
         raise AuthenticationError()
-    access_jti = payload.get("jti")
-    access_exp = payload.get("exp")
-    if not access_jti or access_exp is None:
-        raise AuthenticationError()
-    await revoked_token_repository.revoke(
-        jti=access_jti, expires_at=_epoch_to_naive_utc(access_exp)
-    )
-
-    refresh_jti = payload.get("rjti")
-    refresh_exp = payload.get("rexp")
-    if refresh_jti and refresh_exp is not None:
-        await revoked_token_repository.revoke(
-            jti=refresh_jti, expires_at=_epoch_to_naive_utc(refresh_exp)
-        )
     await _clear_current_session(payload)
 
 

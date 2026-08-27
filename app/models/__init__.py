@@ -3,7 +3,6 @@ from app.models.password_history import PasswordHistory
 from app.models.password_reset_otp import PasswordResetOtp
 from app.models.platform_admin import PlatformAdmin
 from app.models.platform_admin_role import PlatformAdminRole
-from app.models.revoked_token import RevokedToken
 from app.models.role import Role
 from app.models.role_permission import RolePermission
 from app.models.screen import Screen
@@ -17,7 +16,6 @@ __all__ = [
     "PlatformAdminRole",
     "Role",
     "RolePermission",
-    "RevokedToken",
     "Screen",
     "User",
 ]

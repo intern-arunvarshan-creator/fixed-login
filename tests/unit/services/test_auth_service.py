@@ -203,11 +203,6 @@ async def test_refresh_success_rotates_session() -> None:
             ],
         ),
         patch.object(
-            auth_service.revoked_token_repository,
-            "is_revoked",
-            new=AsyncMock(return_value=False),
-        ),
-        patch.object(
             auth_service.auth_repository,
             "get_admin_by_id",
             new=AsyncMock(return_value=admin),
@@ -278,17 +273,10 @@ async def test_refresh_rejects_unknown_admin() -> None:
 async def test_get_admin_from_payload_rejects_wrong_access_session() -> None:
     admin = _admin(current_refresh_jti="r2")
     payload = {"type": "access", "user_id": str(admin.id), "jti": "a1", "rjti": "r1"}
-    with (
-        patch.object(
-            auth_service.revoked_token_repository,
-            "is_revoked",
-            new=AsyncMock(return_value=False),
-        ),
-        patch.object(
-            auth_service.auth_repository,
-            "get_admin_by_id",
-            new=AsyncMock(return_value=admin),
-        ),
+    with patch.object(
+        auth_service.auth_repository,
+        "get_admin_by_id",
+        new=AsyncMock(return_value=admin),
     ):
         with pytest.raises(AuthenticationError):
             await auth_service.get_admin_from_payload(payload)
@@ -297,17 +285,10 @@ async def test_get_admin_from_payload_rejects_wrong_access_session() -> None:
 async def test_get_admin_from_payload_rejects_missing_session() -> None:
     admin = _admin(current_refresh_jti=None)
     payload = {"type": "refresh", "user_id": str(admin.id), "jti": "r1"}
-    with (
-        patch.object(
-            auth_service.revoked_token_repository,
-            "is_revoked",
-            new=AsyncMock(return_value=False),
-        ),
-        patch.object(
-            auth_service.auth_repository,
-            "get_admin_by_id",
-            new=AsyncMock(return_value=admin),
-        ),
+    with patch.object(
+        auth_service.auth_repository,
+        "get_admin_by_id",
+        new=AsyncMock(return_value=admin),
     ):
         with pytest.raises(AuthenticationError):
             await auth_service.get_admin_from_payload(payload)
@@ -316,17 +297,10 @@ async def test_get_admin_from_payload_rejects_missing_session() -> None:
 async def test_get_admin_from_payload_accepts_current_access() -> None:
     admin = _admin(current_refresh_jti="r1")
     payload = {"type": "access", "user_id": str(admin.id), "jti": "a1", "rjti": "r1"}
-    with (
-        patch.object(
-            auth_service.revoked_token_repository,
-            "is_revoked",
-            new=AsyncMock(return_value=False),
-        ),
-        patch.object(
-            auth_service.auth_repository,
-            "get_admin_by_id",
-            new=AsyncMock(return_value=admin),
-        ),
+    with patch.object(
+        auth_service.auth_repository,
+        "get_admin_by_id",
+        new=AsyncMock(return_value=admin),
     ):
         result = await auth_service.get_admin_from_payload(payload)
     assert result is admin
@@ -335,21 +309,9 @@ async def test_get_admin_from_payload_accepts_current_access() -> None:
 async def test_logout_clears_session_pointer() -> None:
     admin_id = uuid.uuid4()
     admin = _admin(id=admin_id, current_refresh_jti="r1")
-    payload = {
-        "type": "access",
-        "user_id": str(admin_id),
-        "jti": "a1",
-        "exp": 1_800_000_000,
-        "rjti": "r1",
-        "rexp": 1_900_000_000,
-    }
+    payload = {"type": "access", "user_id": str(admin_id)}
     with (
         patch.object(auth_service, "decode_token", return_value=payload),
-        patch.object(
-            auth_service.revoked_token_repository,
-            "revoke",
-            new=AsyncMock(return_value=None),
-        ),
         patch.object(
             auth_service.auth_repository,
             "get_admin_by_id",

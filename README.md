@@ -194,13 +194,13 @@ and assign `super_admin` — all idempotent:
 
 ```bash
 uv run python app/database/scripts/seed_admin.py
-# defaults: admin@gmail.com / Admin@1234
+# defaults: seeds admin1..admin5@example.com / Admin@1234 (all super_admin)
 ```
 
-Or override the defaults:
+Or seed a single admin (e.g. production provisioning):
 
 ```bash
-uv run python app/database/scripts/seed_admin.py --username admin --email admin@gmail.com --password 'Admin@1234'
+uv run python app/database/scripts/seed_admin.py --email admin@example.com --username admin --password 'Admin@1234'
 ```
 
 Optionally backfill `super_admin` onto any other existing admins that have no roles
@@ -217,7 +217,7 @@ uv run app
 ```
 
 Server starts at `http://127.0.0.1:8000`. Sanity-check `GET /api/v1/health`, then log in at
-`POST /api/v1/auth/login` with `admin@gmail.com` / `Admin@1234`.
+`POST /api/v1/auth/login` with `admin1@example.com` / `Admin@1234`.
 
 See `docs/api.md` for the full walkthrough.
 
