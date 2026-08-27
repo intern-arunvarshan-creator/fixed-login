@@ -54,6 +54,7 @@ def main() -> None:
         host="0.0.0.0",  # bind all interfaces so colleagues on the LAN can reach it  # noqa: S104
         port=8000,
         reload=True,
+        reload_dirs=["app"],
         app_dir=".",
         log_config=None,
         access_log=False,

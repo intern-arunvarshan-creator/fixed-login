@@ -69,6 +69,6 @@ async def list_audit_logs(
         actor_type=ActorType.ADMIN.value,
         action=AuditAction.AUDIT_READ,
         resource_type=AuditResourceType.AUDIT,
-        response=response.model_dump(mode="json"),
+        details={"page": page, "limit": limit, "total": total},
     )
     return response
