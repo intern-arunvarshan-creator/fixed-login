@@ -8,7 +8,7 @@ import pytest
 from app.exceptions.exceptions import AppError
 from app.models.enums import AuditAction, AuditResourceType, Status
 from app.models.role import Role
-from app.schemas.role import RoleCreate, RoleUpdate
+from app.schemas.role import RoleCreate, RoleGrantItem, RoleGrantsUpdate, RoleUpdate
 from app.services import role_service
 
 
@@ -135,3 +135,73 @@ async def test_delete_super_admin_protected() -> None:
     with patch.object(role_service.role_repository, "get_role", new=AsyncMock(return_value=role)):
         with pytest.raises(AppError):
             await role_service.delete_role(role.id)
+
+
+async def test_get_role_grants() -> None:
+    role = _role()
+    with (
+        patch.object(role_service.role_repository, "get_role", new=AsyncMock(return_value=role)),
+        patch.object(
+            role_service.role_repository,
+            "screen_grants_for_role",
+            new=AsyncMock(return_value=[("S1", "User Management", 1, True, False)]),
+        ),
+    ):
+        grants = await role_service.get_role_grants(role.id)
+    assert grants[0].screen_code == "S1"
+    assert grants[0].read is True
+    assert grants[0].write is False
+
+
+async def test_update_role_grants_normalizes_write_implies_read() -> None:
+    role = _role()
+    record = AsyncMock()
+    replace_mock = AsyncMock(return_value=None)
+    with (
+        patch.object(role_service.role_repository, "get_role", new=AsyncMock(return_value=role)),
+        patch.object(
+            role_service.screen_repository,
+            "active_screen_codes",
+            new=AsyncMock(return_value={"S1", "S2"}),
+        ),
+        patch.object(role_service.role_repository, "replace_role_grants", new=replace_mock),
+        patch.object(
+            role_service.role_repository,
+            "screen_grants_for_role",
+            new=AsyncMock(return_value=[("S1", "User Management", 1, True, True)]),
+        ),
+        patch.object(role_service.audit_service, "record", new=record),
+    ):
+        grants = await role_service.update_role_grants(
+            role.id,
+            RoleGrantsUpdate(grants=[RoleGrantItem(screen_code="S1", read=False, write=True)]),
+        )
+    assert grants[0].read is True
+    assert grants[0].write is True
+    rows = replace_mock.await_args.args[1]
+    assert rows[0].read is True
+    assert rows[0].write is True
+
+
+async def test_update_super_admin_grants_protected() -> None:
+    role = _role(name="super_admin")
+    with patch.object(role_service.role_repository, "get_role", new=AsyncMock(return_value=role)):
+        with pytest.raises(AppError):
+            await role_service.update_role_grants(role.id, RoleGrantsUpdate(grants=[]))
+
+
+async def test_update_role_grants_rejects_unknown_screen() -> None:
+    role = _role()
+    with (
+        patch.object(role_service.role_repository, "get_role", new=AsyncMock(return_value=role)),
+        patch.object(
+            role_service.screen_repository,
+            "active_screen_codes",
+            new=AsyncMock(return_value={"S1"}),
+        ),
+    ):
+        with pytest.raises(AppError):
+            await role_service.update_role_grants(
+                role.id,
+                RoleGrantsUpdate(grants=[RoleGrantItem(screen_code="S9", read=True)]),
+            )

@@ -75,3 +75,31 @@ async def test_delete_role_soft_deletes() -> None:
         await role_repository.delete_role(role)
     assert role.status is Status.INACTIVE
     db.commit.assert_awaited_once()
+
+
+async def test_screen_grants_for_role() -> None:
+    db = MagicMock()
+    db.execute = AsyncMock(return_value=MagicMock())
+    db.execute.return_value.all.return_value = [
+        ("S1", "User Management", 1, True, True),
+        ("S2", "Audit Logs", 2, None, None),
+    ]
+    with patch.object(role_repository, "get_session", return_value=db):
+        rows = await role_repository.screen_grants_for_role(uuid.uuid4())
+    assert rows == [
+        ("S1", "User Management", 1, True, True),
+        ("S2", "Audit Logs", 2, False, False),
+    ]
+
+
+async def test_replace_role_grants() -> None:
+    db = MagicMock()
+    db.execute = AsyncMock()
+    db.add_all = MagicMock()
+    db.commit = AsyncMock()
+    role_id = uuid.uuid4()
+    with patch.object(role_repository, "get_session", return_value=db):
+        await role_repository.replace_role_grants(role_id, [])
+    db.execute.assert_awaited_once()
+    db.add_all.assert_called_once_with([])
+    db.commit.assert_awaited_once()

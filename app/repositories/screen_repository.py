@@ -65,6 +65,13 @@ async def get_screen_by_code(code: str) -> Screen | None:
     return result.scalar_one_or_none()
 
 
+async def active_screen_codes() -> set[str]:
+    """Return the codes of every active screen (for grant validation)."""
+    db = get_session()
+    result = await db.execute(select(col(Screen.code)).where(col(Screen.status) == Status.ACTIVE))
+    return set(result.scalars().all())
+
+
 async def next_screen_code() -> str:
     """Return the next ``S{n}`` code — one past the largest numeric ``S`` suffix."""
     db = get_session()

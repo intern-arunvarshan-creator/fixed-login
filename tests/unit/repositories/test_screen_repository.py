@@ -12,6 +12,14 @@ def _screen() -> Screen:
     return Screen(id=uuid.uuid4(), code="S5", name="Reports", sort_order=0, status=Status.ACTIVE)
 
 
+async def test_active_screen_codes() -> None:
+    db = MagicMock()
+    db.execute = AsyncMock(return_value=MagicMock())
+    db.execute.return_value.scalars.return_value.all.return_value = ["S1", "S3"]
+    with patch.object(screen_repository, "get_session", return_value=db):
+        assert await screen_repository.active_screen_codes() == {"S1", "S3"}
+
+
 async def test_get_screen_returns_none_when_missing() -> None:
     db = AsyncMock()
     db.get = AsyncMock(return_value=None)

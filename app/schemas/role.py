@@ -15,6 +15,10 @@ CODE_UPDATED = "S_200_ROL_UPDATED"
 MSG_UPDATED = "Role updated successfully"
 CODE_DELETED = "S_200_ROL_DELETED"
 MSG_DELETED = "Role deleted successfully"
+CODE_GRANTS_FETCHED = "S_200_ROL_GRANTS_FETCHED"
+MSG_GRANTS_FETCHED = "Role grants fetched successfully"
+CODE_GRANTS_UPDATED = "S_200_ROL_GRANTS_UPDATED"
+MSG_GRANTS_UPDATED = "Role grants updated successfully"
 
 
 class RoleCreate(BaseModel):
@@ -40,3 +44,25 @@ class RoleRead(BaseModel):
     status: Status
     created_at: datetime
     updated_at: datetime
+
+
+class RoleGrantItem(BaseModel):
+    screen_code: str = Field(min_length=1, max_length=50)
+    read: bool = False
+    write: bool = False
+
+
+class RoleGrantsUpdate(BaseModel):
+    grants: list[RoleGrantItem]
+
+
+class RoleGrantRead(BaseModel):
+    screen_code: str
+    screen_name: str
+    sort_order: int
+    read: bool
+    write: bool
+
+
+class RoleGrantsRead(BaseModel):
+    grants: list[RoleGrantRead]

@@ -18,14 +18,20 @@ from app.schemas.role import (
     CODE_CREATED,
     CODE_DELETED,
     CODE_FETCHED,
+    CODE_GRANTS_FETCHED,
+    CODE_GRANTS_UPDATED,
     CODE_LISTED,
     CODE_UPDATED,
     MSG_CREATED,
     MSG_DELETED,
     MSG_FETCHED,
+    MSG_GRANTS_FETCHED,
+    MSG_GRANTS_UPDATED,
     MSG_LISTED,
     MSG_UPDATED,
     RoleCreate,
+    RoleGrantsRead,
+    RoleGrantsUpdate,
     RoleRead,
     RoleUpdate,
 )
@@ -95,3 +101,36 @@ async def delete_role(
     """Soft-delete a role by id (marks it inactive)."""
     await role_service.delete_role(role_id)
     return ApiResponse(code=CODE_DELETED, message=MSG_DELETED, data=None)
+
+
+@router.get(
+    "/{role_id}/grants",
+    response_model=ApiResponse[RoleGrantsRead],
+    summary="Get a role's screen grants",
+)
+async def get_role_grants(
+    role_id: uuid.UUID,
+    _: None = Depends(require_permission(PermissionName.ROLES_READ)),
+) -> ApiResponse[RoleGrantsRead]:
+    """Fetch the full screen catalog with this role's read/write flags."""
+    grants = await role_service.get_role_grants(role_id)
+    return ApiResponse(
+        code=CODE_GRANTS_FETCHED, message=MSG_GRANTS_FETCHED, data=RoleGrantsRead(grants=grants)
+    )
+
+
+@router.put(
+    "/{role_id}/grants",
+    response_model=ApiResponse[RoleGrantsRead],
+    summary="Replace a role's screen grants",
+)
+async def update_role_grants(
+    role_id: uuid.UUID,
+    data: RoleGrantsUpdate,
+    _: None = Depends(require_permission(PermissionName.ROLES_WRITE)),
+) -> ApiResponse[RoleGrantsRead]:
+    """Replace the role's grants with the submitted set (atomic)."""
+    grants = await role_service.update_role_grants(role_id, data)
+    return ApiResponse(
+        code=CODE_GRANTS_UPDATED, message=MSG_GRANTS_UPDATED, data=RoleGrantsRead(grants=grants)
+    )

@@ -3,11 +3,18 @@
 import uuid
 
 from app.core.constants import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
-from app.exceptions.exceptions import ProtectedResourceError, RoleNameExistsError, RoleNotFoundError
+from app.exceptions.exceptions import (
+    ProtectedResourceError,
+    RoleNameExistsError,
+    RoleNotFoundError,
+    ValidationError,
+    field_errors,
+)
 from app.models.enums import AuditAction, AuditResourceType, Status
 from app.models.role import Role
-from app.repositories import role_repository
-from app.schemas.role import RoleCreate, RoleUpdate
+from app.models.role_screen import RoleScreen
+from app.repositories import role_repository, screen_repository
+from app.schemas.role import RoleCreate, RoleGrantRead, RoleGrantsUpdate, RoleUpdate
 from app.services import audit_service
 
 SUPER_ADMIN_ROLE_NAME = "super_admin"
@@ -78,3 +85,48 @@ async def delete_role(role_id: uuid.UUID) -> None:
         resource_type=AuditResourceType.ROLE,
         resource_id=str(role_id),
     )
+
+
+async def get_role_grants(role_id: uuid.UUID) -> list[RoleGrantRead]:
+    await get_role(role_id)
+    rows = await role_repository.screen_grants_for_role(role_id)
+    return [
+        RoleGrantRead(
+            screen_code=code, screen_name=name, sort_order=sort_order, read=read, write=write
+        )
+        for code, name, sort_order, read, write in rows
+    ]
+
+
+async def update_role_grants(role_id: uuid.UUID, data: RoleGrantsUpdate) -> list[RoleGrantRead]:
+    role = await get_role(role_id)
+    if role.name == SUPER_ADMIN_ROLE_NAME:
+        raise ProtectedResourceError()
+    grants_by_code: dict[str, tuple[bool, bool]] = {}
+    for item in data.grants:
+        grants_by_code[item.screen_code] = (item.read or item.write, item.write)
+    valid = await screen_repository.active_screen_codes()
+    invalid = [code for code in grants_by_code if code not in valid]
+    if invalid:
+        raise ValidationError(
+            data=field_errors(
+                [("screen_code", f"Unknown or inactive screen: {code}") for code in invalid]
+            )
+        )
+    rows = [
+        RoleScreen(role_id=role_id, screen_code=code, read=read, write=write)
+        for code, (read, write) in grants_by_code.items()
+    ]
+    await role_repository.replace_role_grants(role_id, rows)
+    await audit_service.record(
+        action=AuditAction.ROLE_GRANTS_UPDATE,
+        resource_type=AuditResourceType.ROLE,
+        resource_id=str(role_id),
+        details={
+            "grants": [
+                {"screen_code": code, "read": read, "write": write}
+                for code, (read, write) in sorted(grants_by_code.items())
+            ]
+        },
+    )
+    return await get_role_grants(role_id)
