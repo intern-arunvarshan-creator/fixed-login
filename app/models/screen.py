@@ -8,6 +8,7 @@ from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, SQLModel
 
 from app.models.enums import Status, enum_values
+from app.utils.limits import NAME_MAX_LENGTH, SCREEN_CODE_MAX_LENGTH
 from app.utils.time import utcnow
 
 
@@ -15,8 +16,8 @@ class Screen(SQLModel, table=True):
     __tablename__ = "screens"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    code: str = Field(max_length=50, unique=True, index=True)
-    name: str = Field(max_length=255)
+    code: str = Field(max_length=SCREEN_CODE_MAX_LENGTH, unique=True, index=True)
+    name: str = Field(max_length=NAME_MAX_LENGTH)
     sort_order: int = Field(default=0)
     status: Status = Field(
         default=Status.ACTIVE,

@@ -36,6 +36,7 @@ from app.schemas.user import (
     UserUpdate,
 )
 from app.services import user_service
+from app.utils.limits import SEARCH_MAX_LENGTH
 
 router = APIRouter(tags=["Users"])
 
@@ -54,7 +55,9 @@ async def create_user(
 async def list_users(
     page: int = Query(DEFAULT_PAGE, ge=MIN_PAGE),
     limit: int = Query(DEFAULT_PAGE_SIZE, ge=MIN_PAGE_SIZE, le=MAX_PAGE_SIZE),
-    search: str | None = Query(None, description="Search by name or email"),
+    search: str | None = Query(
+        None, max_length=SEARCH_MAX_LENGTH, description="Search by name or email"
+    ),
     status: StatusFilter = Query(StatusFilter.ALL, description="Filter by user status"),
     _: None = Depends(require_permission(PermissionName.USERS_READ)),
 ) -> ApiResponse[ListData[UserRead]]:

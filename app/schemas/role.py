@@ -4,6 +4,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.enums import Status
+from app.utils.limits import DESCRIPTION_MAX_LENGTH, NAME_MAX_LENGTH, SCREEN_CODE_MAX_LENGTH
 
 CODE_CREATED = "S_201_ROL_CREATED"
 MSG_CREATED = "Role created successfully"
@@ -22,16 +23,16 @@ MSG_GRANTS_UPDATED = "Role grants updated successfully"
 
 
 class RoleCreate(BaseModel):
-    name: str = Field(min_length=1, max_length=255, examples=["support-agent"])
-    description: str | None = Field(default=None, max_length=255)
+    name: str = Field(min_length=1, max_length=NAME_MAX_LENGTH, examples=["support-agent"])
+    description: str | None = Field(default=None, max_length=DESCRIPTION_MAX_LENGTH)
     status: Status = Status.ACTIVE
 
 
 class RoleUpdate(BaseModel):
     """Partial update (PATCH) — only provided fields are applied."""
 
-    name: str | None = Field(default=None, min_length=1, max_length=255)
-    description: str | None = Field(default=None, max_length=255)
+    name: str | None = Field(default=None, min_length=1, max_length=NAME_MAX_LENGTH)
+    description: str | None = Field(default=None, max_length=DESCRIPTION_MAX_LENGTH)
     status: Status | None = None
 
 
@@ -47,7 +48,7 @@ class RoleRead(BaseModel):
 
 
 class RoleGrantItem(BaseModel):
-    screen_code: str = Field(min_length=1, max_length=50)
+    screen_code: str = Field(min_length=1, max_length=SCREEN_CODE_MAX_LENGTH)
     read: bool = False
     write: bool = False
 

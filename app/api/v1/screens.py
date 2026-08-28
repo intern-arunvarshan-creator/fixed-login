@@ -30,6 +30,7 @@ from app.schemas.screen import (
     ScreenUpdate,
 )
 from app.services import screen_service
+from app.utils.limits import SEARCH_MAX_LENGTH
 
 router = APIRouter(tags=["Screens"])
 
@@ -48,7 +49,9 @@ async def create_screen(
 async def list_screens(
     page: int = Query(DEFAULT_PAGE, ge=MIN_PAGE),
     limit: int = Query(DEFAULT_PAGE_SIZE, ge=MIN_PAGE_SIZE, le=MAX_PAGE_SIZE),
-    search: str | None = Query(None, description="Search by name or code"),
+    search: str | None = Query(
+        None, max_length=SEARCH_MAX_LENGTH, description="Search by name or code"
+    ),
     status: StatusFilter = Query(StatusFilter.ALL, description="Filter by status"),
     _: None = Depends(require_permission(PermissionName.SCREENS_READ)),
 ) -> ApiResponse[ListData[ScreenRead]]:
