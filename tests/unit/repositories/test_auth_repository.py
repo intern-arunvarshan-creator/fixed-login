@@ -29,4 +29,19 @@ async def test_save_admin() -> None:
     admin = PlatformAdmin(username="admin", email="admin@example.com", hashed_password="hash")
     with patch.object(auth_repository, "get_session", return_value=db):
         assert await auth_repository.save_admin(admin) is admin
+    db.add.assert_called_once_with(admin)
     db.commit.assert_awaited_once()
+    db.refresh.assert_awaited_once_with(admin)
+
+
+async def test_update_admin_password() -> None:
+    db = MagicMock()
+    db.commit = AsyncMock()
+    db.refresh = AsyncMock()
+    admin = PlatformAdmin(username="admin", email="admin@example.com", hashed_password="old")
+    with patch.object(auth_repository, "get_session", return_value=db):
+        result = await auth_repository.update_admin_password(admin, "new-hash")
+    assert result is admin
+    assert admin.hashed_password == "new-hash"
+    db.commit.assert_awaited_once()
+    db.refresh.assert_awaited_once_with(admin)

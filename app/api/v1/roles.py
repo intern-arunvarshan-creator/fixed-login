@@ -36,6 +36,7 @@ from app.schemas.role import (
     RoleUpdate,
 )
 from app.services import role_service
+from app.utils.limits import SEARCH_MAX_LENGTH
 
 router = APIRouter(tags=["Roles"])
 
@@ -54,7 +55,7 @@ async def create_role(
 async def list_roles(
     page: int = Query(DEFAULT_PAGE, ge=MIN_PAGE),
     limit: int = Query(DEFAULT_PAGE_SIZE, ge=MIN_PAGE_SIZE, le=MAX_PAGE_SIZE),
-    search: str | None = Query(None, description="Search by name"),
+    search: str | None = Query(None, max_length=SEARCH_MAX_LENGTH, description="Search by name"),
     status: StatusFilter = Query(StatusFilter.ALL, description="Filter by status"),
     _: None = Depends(require_permission(PermissionName.ROLES_READ)),
 ) -> ApiResponse[ListData[RoleRead]]:

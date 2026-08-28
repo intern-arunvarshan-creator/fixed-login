@@ -1,0 +1,31 @@
+"""Shared field-length and range limits referenced by schemas (server) and models (database)."""
+
+EMAIL_MAX_LENGTH = 255
+NAME_MAX_LENGTH = 255
+DESCRIPTION_MAX_LENGTH = 255
+DISPLAY_NAME_MAX_LENGTH = 255  # platform_admins.username (the Display Name)
+
+SCREEN_CODE_MAX_LENGTH = 50
+SORT_ORDER_MAX = 9999
+
+LOGIN_PASSWORD_MAX_LENGTH = 128
+CONFIRM_PASSWORD_MAX_LENGTH = 13
+PASSWORD_HASH_LENGTH = 60  # bcrypt output is always exactly 60 characters
+
+OTP_MAX_LENGTH = 12
+
+REFRESH_TOKEN_MAX_LENGTH = 2048
+JTI_MAX_LENGTH = 36  # UUID string (platform_admins.current_refresh_jti)
+
+SEARCH_MAX_LENGTH = 255
+ACTOR_FILTER_MAX_LENGTH = 255
+
+# Audit-entry column lengths (app/models/audit_log.py)
+ACTOR_TYPE_MAX_LENGTH = 255  # ActorType value ('admin' | 'system')
+ACTION_MAX_LENGTH = 255  # AuditAction value (e.g. 'user.create')
+RESOURCE_TYPE_MAX_LENGTH = 255  # AuditResourceType value (e.g. 'user')
+RESOURCE_ID_MAX_LENGTH = 255  # login email, UUID string, or Screen Code
+URL_MAX_LENGTH = 2048  # request URL path
+REQUEST_ID_MAX_LENGTH = 255  # client X-Request-ID header or generated UUID
+IP_ADDRESS_MAX_LENGTH = 255  # client IP (conservative; IPv6 max is 45)
+USER_AGENT_MAX_LENGTH = 512  # User-Agent header

@@ -25,6 +25,7 @@ from app.models.platform_admin import PlatformAdmin
 from app.schemas.audit import CODE_LISTED, MSG_LISTED, AuditLogRead
 from app.schemas.common import ApiResponse, ListData, build_list_data
 from app.services import audit_service
+from app.utils.limits import ACTOR_FILTER_MAX_LENGTH
 
 router = APIRouter(tags=["Audit"])
 
@@ -38,7 +39,9 @@ async def list_audit_logs(
     request: Request,
     page: int = Query(DEFAULT_PAGE, ge=MIN_PAGE),
     limit: int = Query(DEFAULT_PAGE_SIZE, ge=MIN_PAGE_SIZE, le=MAX_PAGE_SIZE),
-    actor: str | None = Query(None, description="Filter by actor (email)"),
+    actor: str | None = Query(
+        None, max_length=ACTOR_FILTER_MAX_LENGTH, description="Filter by actor (email)"
+    ),
     action: AuditActionFilter = Query(AuditActionFilter.ALL, description="Filter by audit action"),
     resource_type: AuditResourceTypeFilter = Query(
         AuditResourceTypeFilter.ALL, description="Filter by resource type"
