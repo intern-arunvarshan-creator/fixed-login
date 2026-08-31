@@ -10,7 +10,9 @@ class AppError(Exception):
     code: str = "E_500_INTERNAL_ERROR"
     message: str = "Something went wrong. Please try again later."
 
-    def __init__(self, *, data: dict[str, Any] | None = None) -> None:
+    def __init__(self, *, data: dict[str, Any] | None = None, message: str | None = None) -> None:
+        if message is not None:
+            self.message = message
         super().__init__(self.message)
         self.data = data
 
@@ -33,6 +35,15 @@ class InvalidCredentialsError(AuthenticationError):
 
     code = "E_401_AUTH_INVALID_CREDENTIALS"
     message = "Invalid user credentials."
+
+    def __init__(self, *, remaining_attempts: int | None = None) -> None:
+        message: str | None = None
+        data: dict[str, Any] | None = None
+        if remaining_attempts is not None:
+            unit = "attempt" if remaining_attempts == 1 else "attempts"
+            message = f"{type(self).message} {remaining_attempts} {unit} remaining"
+            data = {"remaining_attempts": remaining_attempts}
+        super().__init__(data=data, message=message)
 
 
 class AccountLockedError(AuthenticationError):
@@ -172,3 +183,11 @@ class ServiceUnavailableError(AppError):
     status_code = 503
     code = "E_503_HEALTH_DOWN"
     message = "Service is unhealthy"
+
+
+class AuthTimeoutError(AppError):
+    """Raised when login does not complete within the auth-service deadline."""
+
+    status_code = 504
+    code = "E_504_AUTH_TIMEOUT"
+    message = "Authentication timed out. Please try again."

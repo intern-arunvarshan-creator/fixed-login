@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, model_validator,field_validator
 
 from app.schemas.fields import EmailStr, PasswordStr
 from app.utils.limits import (
@@ -28,7 +28,10 @@ class LoginRequest(BaseModel):
     password: str = Field(
         min_length=1, max_length=LOGIN_PASSWORD_MAX_LENGTH, description="Admin account password"
     )
-
+ @field_validator("email", mode="before")
+    @classmethod
+    def normalize_email(cls, value):
+        return value.strip().lower()
 
 class RefreshRequest(BaseModel):
     refresh_token: str = Field(min_length=1, max_length=REFRESH_TOKEN_MAX_LENGTH)

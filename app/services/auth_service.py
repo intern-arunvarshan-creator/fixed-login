@@ -1,5 +1,6 @@
 """Auth business rules (login, token refresh, admin resolution)."""
 
+import asyncio
 import uuid
 from datetime import timedelta
 from typing import Any
@@ -19,6 +20,7 @@ from app.exceptions.exceptions import (
     AccountInactiveError,
     AccountLockedError,
     AuthenticationError,
+    AuthTimeoutError,
     InvalidCredentialsError,
     InvalidOtpError,
     OtpThrottledError,
@@ -50,6 +52,16 @@ OTP_CODE = "12345"  # noqa: S105  # nosec B105  (fixed OTP, not a real secret)
 
 @traced("auth_service.login")
 async def login(credentials: LoginRequest) -> TokenResponse:
+    try:
+        async with asyncio.timeout(settings.auth_service_timeout_seconds):
+            return await _authenticate(credentials)
+    except TimeoutError:
+        raise AuthTimeoutError() from None
+
+
+async def _authenticate(credentials: LoginRequest) -> TokenResponse:
+    if settings.auth_service_delay > 0:
+        await asyncio.sleep(settings.auth_service_delay)
     admin = await auth_repository.get_admin_by_email(credentials.email)
     if admin is None:
         raise InvalidCredentialsError()
@@ -66,14 +78,15 @@ async def login(credentials: LoginRequest) -> TokenResponse:
             admin.failed_login_attempts = 0
             await auth_repository.save_admin(admin)
             raise AccountLockedError()
+        remaining = settings.max_failed_login_attempts - admin.failed_login_attempts
         await auth_repository.save_admin(admin)
-        raise InvalidCredentialsError()
+        raise InvalidCredentialsError(remaining_attempts=remaining)
     if admin.status != Status.ACTIVE:
         raise AccountInactiveError()
     admin.failed_login_attempts = 0
     admin.locked_until = None
     permissions = await rbac_service.permissions_for_admin(admin.id)
-    return await _issue_session(admin, permissions=sorted(permissions))
+    return await _issue_session(admin, permissions=sorted(permissions)))
 
 
 async def _issue_session(admin: PlatformAdmin, permissions: list[str]) -> TokenResponse:

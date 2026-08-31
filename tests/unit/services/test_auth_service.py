@@ -11,6 +11,7 @@ from app.exceptions.exceptions import (
     AccountInactiveError,
     AccountLockedError,
     AuthenticationError,
+    AuthTimeoutError,
     InvalidCredentialsError,
     InvalidOtpError,
     OtpThrottledError,
@@ -86,8 +87,10 @@ async def test_login_invalid_credentials() -> None:
         "get_admin_by_email",
         new=AsyncMock(return_value=None),
     ):
-        with pytest.raises(InvalidCredentialsError):
+        with pytest.raises(InvalidCredentialsError) as exc_info:
             await auth_service.login(LoginRequest(email="nope@example.com", password="pw"))
+    assert exc_info.value.message == "Invalid user credentials."
+    assert exc_info.value.data is None
 
 
 async def test_login_inactive_account() -> None:
@@ -122,7 +125,31 @@ async def test_login_wrong_password_increments_counter() -> None:
         with pytest.raises(InvalidCredentialsError) as exc_info:
             await auth_service.login(LoginRequest(email="admin@example.com", password="pw"))
     assert exc_info.value.code == "E_401_AUTH_INVALID_CREDENTIALS"
+    assert exc_info.value.data == {"remaining_attempts": 4}
+    assert "4 attempts remaining" in exc_info.value.message
     assert admin.failed_login_attempts == 1
+
+
+async def test_login_wrong_password_last_attempt_before_lock() -> None:
+    admin = _admin(failed_login_attempts=3)
+    with (
+        patch.object(
+            auth_service.auth_repository,
+            "get_admin_by_email",
+            new=AsyncMock(return_value=admin),
+        ),
+        patch.object(auth_service, "verify_password", return_value=False),
+        patch.object(
+            auth_service.auth_repository,
+            "save_admin",
+            new=AsyncMock(return_value=admin),
+        ),
+    ):
+        with pytest.raises(InvalidCredentialsError) as exc_info:
+            await auth_service.login(LoginRequest(email="admin@example.com", password="pw"))
+    assert exc_info.value.data == {"remaining_attempts": 1}
+    assert "1 attempt remaining" in exc_info.value.message
+    assert admin.failed_login_attempts == 4
 
 
 async def test_login_locks_account_at_max_attempts() -> None:
@@ -159,6 +186,31 @@ async def test_login_rejects_locked_account() -> None:
         with pytest.raises(AccountLockedError):
             await auth_service.login(LoginRequest(email="admin@example.com", password="pw"))
         verify.assert_not_called()
+
+
+async def test_login_times_out_without_incrementing_fail_count() -> None:
+    admin = _admin()
+    save = AsyncMock(return_value=admin)
+    with (
+        patch.object(auth_service.settings, "auth_service_timeout_seconds", 0.01),
+        patch.object(auth_service.settings, "auth_service_delay", 0.05),
+        patch.object(
+            auth_service.auth_repository,
+            "get_admin_by_email",
+            new=AsyncMock(return_value=admin),
+        ),
+        patch.object(
+            auth_service.auth_repository,
+            "save_admin",
+            new=save,
+        ),
+    ):
+        with pytest.raises(AuthTimeoutError) as exc_info:
+            await auth_service.login(LoginRequest(email="admin@example.com", password="pw"))
+    assert exc_info.value.code == "E_504_AUTH_TIMEOUT"
+    assert exc_info.value.status_code == 504
+    assert admin.failed_login_attempts == 0
+    save.assert_not_called()
 
 
 async def test_login_resets_counter_on_success() -> None:
