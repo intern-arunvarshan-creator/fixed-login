@@ -2,7 +2,7 @@
 
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import select,func
 from sqlmodel import col
 
 from app.database.session import get_session
