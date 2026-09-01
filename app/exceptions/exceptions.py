@@ -109,6 +109,12 @@ class EmailExistsError(ConflictError):
     def __init__(self) -> None:
         super().__init__(data=field_errors([("email", self.message)]))
 
+class LastAdminError(ConflictError):
+    """Raised when deactivating the last active Platform Admin."""
+
+    code = "E_409_USR_LAST_ADMIN"
+    message = "Cannot deactivate the last active platform admin"       
+
 
 class RoleNameExistsError(ConflictError):
     """Raised when a Role with the same name already exists."""
