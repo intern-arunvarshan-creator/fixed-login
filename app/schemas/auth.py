@@ -28,7 +28,8 @@ class LoginRequest(BaseModel):
     password: str = Field(
         min_length=1, max_length=LOGIN_PASSWORD_MAX_LENGTH, description="Admin account password"
     )
- @field_validator("email", mode="before")
+
+    @field_validator("email", mode="before")
     @classmethod
     def normalize_email(cls, value):
         return value.strip().lower()

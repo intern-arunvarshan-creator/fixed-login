@@ -86,7 +86,7 @@ async def _authenticate(credentials: LoginRequest) -> TokenResponse:
     admin.failed_login_attempts = 0
     admin.locked_until = None
     permissions = await rbac_service.permissions_for_admin(admin.id)
-    return await _issue_session(admin, permissions=sorted(permissions)))
+    return await _issue_session(admin, permissions=sorted(permissions))
 
 
 async def _issue_session(admin: PlatformAdmin, permissions: list[str]) -> TokenResponse:
