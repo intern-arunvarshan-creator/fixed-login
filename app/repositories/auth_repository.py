@@ -10,8 +10,10 @@ from app.models.platform_admin import PlatformAdmin
 
 
 async def get_admin_by_email(email: str) -> PlatformAdmin | None:
+    normalized_email = email.strip().lower()
     result = await get_session().execute(
-        select(PlatformAdmin).where(col(PlatformAdmin.email) == email)
+        select(PlatformAdmin)
+        .where(func.lower(PlatformAdmin.email) == normalized_email)
     )
     return result.scalar_one_or_none()
 
