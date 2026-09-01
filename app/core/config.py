@@ -36,7 +36,6 @@ class Settings(BaseSettings):
     refresh_token_expire_days: int = 7
     max_failed_login_attempts: int = 5
     lockout_minutes: int = 15
-    # Login must finish within this window; AUTH_SERVICE_DELAY is a test/sim delay.
     auth_service_timeout_seconds: float = 10
     auth_service_delay: float = 0
     otp_expiry_minutes: int = 10
