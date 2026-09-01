@@ -11,9 +11,7 @@ from app.models.platform_admin import PlatformAdmin
 
 async def get_admin_by_email(email: str) -> PlatformAdmin | None:
     result = await get_session().execute(
-        select(PlatformAdmin).where(
-            func.lower(PlatformAdmin.email) == email
-        )
+        select(PlatformAdmin).where(col(PlatformAdmin.email) == email)
     )
     return result.scalar_one_or_none()
 
