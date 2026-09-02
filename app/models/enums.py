@@ -57,6 +57,10 @@ class PermissionName(StrEnum):
     ROLES_WRITE = "S3.W"
     SCREENS_READ = "S4.R"
     SCREENS_WRITE = "S4.W"
+    QUERY_CATEGORY_READ = "query_category:read"
+    QUERY_CATEGORY_CREATE = "query_category:create"
+    QUERY_CATEGORY_UPDATE = "query_category:update" 
+    QUERY_CATEGORY_DELETE = "query_category:delete"
 
 
 def enum_values(enum_cls: type[Enum]) -> list[str]:
