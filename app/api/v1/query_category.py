@@ -1,92 +1,130 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import Session
+"""QueryCategory CRUD routes."""
 
-from app.api.deps import get_current_admin, get_db, require_permission
-from app.models.enums import PermissionName
-from app.models.query_category import QueryCategory
-from app.services.query_category import QueryCategoryService
+from fastapi import APIRouter, Depends, Query, status
 
-router = APIRouter(prefix="/query-category", tags=["Query Category"])
-
-
-def get_query_category_service(
-    session: Session = Depends(get_db),
-) -> QueryCategoryService:
-    return QueryCategoryService(session)
-
-
-@router.get("/", dependencies=[Depends(require_permission(PermissionName.QUERY_CATEGORY_READ))])
-def list_query_categories(
-    service: QueryCategoryService = Depends(get_query_category_service),
-    _: dict = Depends(get_current_admin),
-):
-    return service.get_all()
-
-
-@router.get(
-    "/{category_id}",
-    dependencies=[Depends(require_permission(PermissionName.QUERY_CATEGORY_READ))],
+from app.api.deps import require_permission
+from app.core.constants import (
+    DEFAULT_PAGE,
+    DEFAULT_PAGE_SIZE,
+    MAX_PAGE_SIZE,
+    MIN_PAGE,
+    MIN_PAGE_SIZE,
 )
-def get_query_category(
-    category_id: int,
-    service: QueryCategoryService = Depends(get_query_category_service),
-    _: dict = Depends(get_current_admin),
-):
-    category = service.get_by_id(category_id)
-    if not category:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Query category not found",
-        )
-    return category
+from app.models.enums import PermissionName, Status, StatusFilter, resolve_filter
+from app.schemas.common import ApiResponse, ListData, build_list_data
+from app.schemas.query_category import (
+    CODE_CREATED,
+    CODE_DELETED,
+    CODE_FETCHED,
+    CODE_LISTED,
+    CODE_UPDATED,
+    MSG_CREATED,
+    MSG_DELETED,
+    MSG_FETCHED,
+    MSG_LISTED,
+    MSG_UPDATED,
+    QueryCategoryCreate,
+    QueryCategoryResponse,
+    QueryCategoryUpdate,
+)
+from app.services.query_category import (
+    create_category,
+    delete_category,
+    get_category,
+    list_categories,
+    update_category,
+)
+
+router = APIRouter(
+    prefix="/query-categories",
+    tags=["QueryCategories"],
+)
 
 
 @router.post(
-    "/",
+    "",
+    response_model=ApiResponse[QueryCategoryResponse],
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_permission(PermissionName.QUERY_CATEGORY_CREATE))],
+    summary="Create a query category",
 )
-def create_query_category(
-    payload: QueryCategory,
-    service: QueryCategoryService = Depends(get_query_category_service),
-    _: dict = Depends(get_current_admin),
-):
-    return service.create(payload)
+async def create_query_category(
+    data: QueryCategoryCreate,
+    _: None = Depends(require_permission(PermissionName.QUERY_CATEGORY_CREATE)),
+) -> ApiResponse[QueryCategoryResponse]:
+    entity = await create_category(data)
+    return ApiResponse(code=CODE_CREATED, message=MSG_CREATED, data=entity)
 
 
-@router.put(
-    "/{category_id}",
-    dependencies=[Depends(require_permission(PermissionName.QUERY_CATEGORY_UPDATE))],
+@router.get(
+    "",
+    response_model=ApiResponse[ListData[QueryCategoryResponse]],
+    summary="List query categories",
 )
-def update_query_category(
-    category_id: int,
-    payload: QueryCategory,
-    service: QueryCategoryService = Depends(get_query_category_service),
-    _: dict = Depends(get_current_admin),
-):
-    category = service.get_by_id(category_id)
-    if not category:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Query category not found",
-        )
-    return service.update(category, payload)
+async def list_query_categories(
+    page: int = Query(DEFAULT_PAGE, ge=MIN_PAGE),
+    limit: int = Query(DEFAULT_PAGE_SIZE, ge=MIN_PAGE_SIZE, le=MAX_PAGE_SIZE),
+    status: StatusFilter = Query(StatusFilter.ALL, description="Filter by status"),
+    _: None = Depends(require_permission(PermissionName.QUERY_CATEGORY_READ)),
+) -> ApiResponse[ListData[QueryCategoryResponse]]:
+    entities, total = await list_categories(
+        page=page,
+        limit=limit,
+        status=resolve_filter(status, Status),
+    )
+    return ApiResponse(
+        code=CODE_LISTED,
+        message=MSG_LISTED,
+        data=build_list_data(
+            QueryCategoryResponse,
+            entities,
+            page=page,
+            limit=limit,
+            total=total,
+        ),
+    )
+
+
+@router.get(
+    "/{entity_id}",
+    response_model=ApiResponse[QueryCategoryResponse],
+    summary="Get a query category",
+)
+async def get_query_category(
+    entity_id: int,
+    _: None = Depends(require_permission(PermissionName.QUERY_CATEGORY_READ)),
+) -> ApiResponse[QueryCategoryResponse]:
+    entity = await get_category(entity_id)
+    return ApiResponse(code=CODE_FETCHED, message=MSG_FETCHED, data=entity)
+
+
+@router.patch(
+    "/{entity_id}",
+    response_model=ApiResponse[QueryCategoryResponse],
+    summary="Update a query category",
+)
+async def update_query_category(
+    entity_id: int,
+    data: QueryCategoryUpdate,
+    _: None = Depends(require_permission(PermissionName.QUERY_CATEGORY_UPDATE)),
+) -> ApiResponse[QueryCategoryResponse]:
+
+    entity = await update_category(entity_id, data)
+
+    return ApiResponse(
+        code=CODE_UPDATED,
+        message=MSG_UPDATED,
+        data=entity,
+    )
 
 
 @router.delete(
-    "/{category_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(require_permission(PermissionName.QUERY_CATEGORY_DELETE))],
+    "/{entity_id}",
+    response_model=ApiResponse[None],
+    summary="Delete a query category",
 )
-def delete_query_category(
-    category_id: int,
-    service: QueryCategoryService = Depends(get_query_category_service),
-    _: dict = Depends(get_current_admin),
-):
-    category = service.get_by_id(category_id)
-    if not category:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Query category not found",
-        )
-    service.delete(category)
+async def delete_query_category(
+    entity_id: int,
+    _: None = Depends(require_permission(PermissionName.QUERY_CATEGORY_DELETE)),
+) -> ApiResponse[None]:
+    await delete_category(entity_id)
+    return ApiResponse(code=CODE_DELETED, message=MSG_DELETED, data=None)

@@ -214,7 +214,25 @@ class ServiceUnavailableError(AppError):
     code = "E_503_HEALTH_DOWN"
     message = "Service is unhealthy"
 
+class QueryCategoryNotFoundError(AppError):
+    """Raised when a Query Category does not exist."""
 
+    status_code = 404
+    code = "E_404_QCAT_NOT_FOUND"
+    message = "Query category not found"
+
+
+class QueryCategoryKeyExistsError(ConflictError):
+    """Raised when a Query Category with the same key already exists."""
+
+    code = "E_409_QCAT_KEY_EXISTS"
+    message = "Query category key already exists"
+
+    def __init__(self) -> None:
+        super().__init__(
+            data=field_errors([("key", self.message)])
+        )
+        
 class AuthTimeoutError(AppError):
     """Raised when login does not complete within the auth-service deadline."""
 

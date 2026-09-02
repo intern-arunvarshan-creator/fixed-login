@@ -1,162 +1,87 @@
-from fastapi import HTTPException, status
-from app.models.query_category import QueryCategory
-from app.schemas.query_category import (
-    QueryCategoryCreate,
-    QueryCategoryResponse,
-    QueryCategoryUpdate,
+"""Query category business rules."""
+from app.core.constants import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
+from app.exceptions.exceptions import (
+QueryCategoryKeyExistsError,
+QueryCategoryNotFoundError,
 )
-from app.repositories.query_category import QueryCategoryRepository
+from app.models.enums import Status
+from app.models.query_category import QueryCategory
+from app.repositories import query_category
+from app.schemas.query_category import QueryCategoryCreate, QueryCategoryUpdate
+
+async def _ensure_key_available(
+key: str,
+exclude_id: int | None = None,
+) -> None:
+  existing = await query_category.get_category_by_key(key)
 
 
-class QueryCategoryService:
-    """Service class for QueryCategory business logic."""
+  if existing is not None and (
+    exclude_id is None or existing.id != exclude_id
+  ):
+    raise QueryCategoryKeyExistsError()
+ 
 
-    def __init__(self, db):
-        self.repository = QueryCategoryRepository(db)
+async def create_category(data: QueryCategoryCreate) -> QueryCategory:
+    await _ensure_key_available(data.key)
+    category = QueryCategory(
+    module=data.module,
+    type=data.type,
+    description=data.description,
+    key=data.key,
+    label=data.label,
+    status=data.status,
+)
 
-    def list_categories(
-        self,
-        page: int,
-        limit: int,
-        module: str | None = None,
-        status: str | None = None,
-    ) -> tuple[list[QueryCategoryResponse], int]:
-        """List categories with pagination and optional filters."""
-        offset = (page - 1) * limit
+    category = await query_category.create_category(category)
 
-        categories = self.repository.get_all(
-            skip=offset,
-            limit=limit,
-            module=module,
-            status=status,
-        )
+    return category
 
-        total = self.repository.get_count(
-            module=module,
-            status=status,
-        )
+async def list_categories(
+    page: int = DEFAULT_PAGE,
+    limit: int = DEFAULT_PAGE_SIZE,
+    module: str | None = None,
+    status: Status | None = None,
+    ) -> tuple[list[QueryCategory], int]:
+    return await query_category.list_categories(
+        page=page,
+        limit=limit,
+        module=module,
+        status=status,
+)
 
-        return [self._to_response(category) for category in categories], total
+async def get_category(category_id: int) -> QueryCategory:
+    category = await query_category.get_category(category_id)
 
-    def get_category_by_id(
-        self,
-        category_id: int,
-    ) -> QueryCategoryResponse:
-        """Get category by ID with validation."""
-        category = self.repository.get_by_id(category_id)
+    if category is None:
+        raise QueryCategoryNotFoundError()
 
-        if not category:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Category not found",
-            )
+    return category
 
-        return self._to_response(category)
 
-    def create_category(
-        self,
-        category_data: QueryCategoryCreate,
-    ) -> QueryCategoryResponse:
-        """Create category with business validation."""
-        existing = self.repository.get_by_key(category_data.key)
+async def update_category(category_id: int,data: QueryCategoryUpdate,) -> QueryCategory:
+    category = await get_category(category_id)
 
-        if existing:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Category with key '{category_data.key}' already exists",
-            )
 
-        category = self.repository.create(category_data)
+    payload = data.model_dump(
+    exclude_unset=True,
+    exclude_none=True,
+    )
+    if "key" in payload:
+            await _ensure_key_available(
+                        key=payload["key"],
+                                exclude_id=category_id,
+                                    )
 
-        return self._to_response(category)
+    category = await query_category.update_category(
+    category=category,
+    data=payload,
+    )
 
-    def update_category(
-        self,
-        category_id: int,
-        category_data: QueryCategoryUpdate,
-    ) -> QueryCategoryResponse:
-        """Update category with business validation."""
-        existing = self.repository.get_by_id(category_id)
+    return category
 
-        if not existing:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Category not found",
-            )
 
-        if (
-            category_data.key is not None
-            and category_data.key != existing.key
-        ):
-            key_exists = self.repository.get_by_key(category_data.key)
+async def delete_category(category_id: int) -> None:
+    category = await get_category(category_id)
+    await query_category.delete_category(category)
 
-            if key_exists and key_exists.id != category_id:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Category with key '{category_data.key}' already exists",
-                )
-
-        category = self.repository.update(
-            category_id,
-            category_data,
-        )
-
-        return self._to_response(category)
-
-    def delete_category(self, category_id: int) -> None:
-        """Soft delete a category."""
-        category = self.repository.get_by_id(category_id)
-
-        if not category:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Category not found",
-            )
-
-        self.repository.soft_delete(category_id)
-
-    def seed_data(self) -> dict:
-        """Seed initial query categories."""
-        initial_data = [
-            {
-                "module": "RTO Booklet",
-                "type": "signature",
-                "description": "Signature related",
-                "key": "signature_missing",
-                "label": "Signature Missing",
-                "status": "active",
-            },
-            {
-                "module": "KYC",
-                "type": "personal",
-                "description": "Personal details",
-                "key": "name",
-                "label": "Name",
-                "status": "active",
-            },
-        ]
-
-        created_count = self.repository.seed_initial_data(initial_data)
-
-        return {
-            "message": f"Seeded {created_count} new categories",
-            "total_requested": len(initial_data),
-            "created_count": created_count,
-        }
-
-    def _to_response(
-        self,
-        category: QueryCategory,
-    ) -> QueryCategoryResponse:
-        """Convert SQLAlchemy model to Pydantic response schema."""
-        return QueryCategoryResponse(
-            id=category.id,
-            module=category.module,
-            type=category.type,
-            description=category.description,
-            key=category.key,
-            label=category.label,
-            status=category.status,
-            created_at=category.created_at,
-            updated_at=category.updated_at,
-        )

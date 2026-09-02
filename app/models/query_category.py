@@ -1,27 +1,57 @@
-import enum
-from sqlalchemy import Column, DateTime, Index, Integer, String, Text
-from sqlalchemy.sql import func
+from datetime import datetime
+
+from sqlalchemy import Column, DateTime, Enum as SAEnum, Index, Text, func
 from sqlmodel import Field, SQLModel
 
-
-class StatusEnum(str, enum.Enum):
-    active = "active"
-    inactive = "inactive"
+from app.models.enums import Status, enum_values
 
 
 class QueryCategory(SQLModel, table=True):
     __tablename__ = "query_categories"
-
-    id: int = Field(default=None, primary_key=True, index=True)
-    module: str = Field(default=None, nullable=False)
-    type: str = Field(default=None, nullable=False)
-    description: str = Field(default=None, nullable=True)
-    key: str = Field(default=None, unique=True, nullable=False)
-    label: str = Field(default=None, nullable=False)
-    status: StatusEnum = Field(default=StatusEnum.active, nullable=False)
-
     __table_args__ = (
         Index("idx_query_categories_module", "module"),
         Index("idx_query_categories_type", "type"),
         Index("idx_query_categories_status", "status"),
     )
+
+    id: int | None = Field(default=None, primary_key=True)
+    module: str = Field(nullable=False)
+    type: str = Field(nullable=False)
+    description: str | None = Field(default=None, nullable=True)
+    key: str = Field(nullable=False, unique=True, index=True)
+    label: str = Field(nullable=False)
+
+    status: Status = Field(
+        default=Status.ACTIVE,
+        sa_column=Column(
+            SAEnum(
+                Status,
+                values_callable=enum_values,  # stores/reads "active", "inactive"
+                name="status",
+                create_type=False,  # type already exists from other tables
+            ),
+            nullable=False,
+            server_default=Status.ACTIVE.value,
+        ),
+    )
+
+    created_at: datetime | None = Field(
+        default=None,
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            nullable=False,
+        ),
+    )
+    updated_at: datetime | None = Field(
+        default=None,
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+    )
+
+    created_by: int = Field(nullable=False)
+    updated_by: int = Field(nullable=False)

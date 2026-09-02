@@ -3,7 +3,6 @@
 from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import Any
 from app.database.database import get_db
-from app.services.query_category import QueryCategoryService
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi import Depends, Request
@@ -20,11 +19,7 @@ from app.services import auth_service, rbac_service
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
-async def get_query_category_service(
-    db: AsyncSession = Depends(get_db),
-) -> QueryCategoryService:
-    """Dependency to inject QueryCategoryService into routes."""
-    return QueryCategoryService(db)
+
     
 def _access_token_payload(credentials: HTTPAuthorizationCredentials | None) -> dict[str, Any]:
     if credentials is None:
@@ -94,6 +89,7 @@ _SCREEN_RESOURCE_TYPES = {
     "S2": AuditResourceType.AUDIT,
     "S3": AuditResourceType.ROLE,
     "S4": AuditResourceType.SCREEN,
+    "S5": AuditResourceType.QUERY_CATEGORY,
 }
 
 
