@@ -61,9 +61,7 @@ class PermissionName(StrEnum):
     SCREENS_WRITE = "S4.W"
     QUERY_CATEGORY_READ = "S5.R"
     QUERY_CATEGORY_WRITE = "S5.W"
-    QUERY_CATEGORY_CREATE = "S5.C"
-    QUERY_CATEGORY_UPDATE = "S5.U"
-    QUERY_CATEGORY_DELETE = "S5.D"
+    
 
 
 def enum_values(enum_cls: type[Enum]) -> list[str]:

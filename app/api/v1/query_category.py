@@ -49,7 +49,7 @@ router = APIRouter(
 )
 async def create_query_category(
     data: QueryCategoryCreate,
-    _: None = Depends(require_permission(PermissionName.QUERY_CATEGORY_CREATE)),
+    _: None = Depends(require_permission(PermissionName.QUERY_CATEGORY_WRITE)),
 ) -> ApiResponse[QueryCategoryResponse]:
     entity = await create_category(data)
     return ApiResponse(code=CODE_CREATED, message=MSG_CREATED, data=entity)
@@ -105,7 +105,7 @@ async def get_query_category(
 async def update_query_category(
     entity_id: int,
     data: QueryCategoryUpdate,
-    _: None = Depends(require_permission(PermissionName.QUERY_CATEGORY_UPDATE)),
+    _: None = Depends(require_permission(PermissionName.QUERY_CATEGORY_WRITE)),
 ) -> ApiResponse[QueryCategoryResponse]:
 
     entity = await update_category(entity_id, data)
@@ -124,7 +124,7 @@ async def update_query_category(
 )
 async def delete_query_category(
     entity_id: int,
-    _: None = Depends(require_permission(PermissionName.QUERY_CATEGORY_DELETE)),
+    _: None = Depends(require_permission(PermissionName.QUERY_CATEGORY_WRITE)),
 ) -> ApiResponse[None]:
     await delete_category(entity_id)
     return ApiResponse(code=CODE_DELETED, message=MSG_DELETED, data=None)
