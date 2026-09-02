@@ -2,7 +2,8 @@
 
 from fastapi import APIRouter, Depends, Query, status
 
-from app.api.deps import require_permission
+from app.api.deps import get_current_admin,require_permission
+from app.models.platform_admin import PlatformAdmin
 from app.core.constants import (
     DEFAULT_PAGE,
     DEFAULT_PAGE_SIZE,
@@ -49,9 +50,10 @@ router = APIRouter(
 )
 async def create_query_category(
     data: QueryCategoryCreate,
+    admin: PlatformAdmin = Depends(get_current_admin),
     _: None = Depends(require_permission(PermissionName.QUERY_CATEGORY_WRITE)),
 ) -> ApiResponse[QueryCategoryResponse]:
-    entity = await create_category(data)
+    entity = await create_category(data, admin_id=admin.id)
     return ApiResponse(code=CODE_CREATED, message=MSG_CREATED, data=entity)
 
 
@@ -105,10 +107,11 @@ async def get_query_category(
 async def update_query_category(
     entity_id: int,
     data: QueryCategoryUpdate,
+    admin: PlatformAdmin = Depends(get_current_admin),
     _: None = Depends(require_permission(PermissionName.QUERY_CATEGORY_WRITE)),
 ) -> ApiResponse[QueryCategoryResponse]:
 
-    entity = await update_category(entity_id, data)
+    entity = await update_category(entity_id, data, admin_id=admin.id)
 
     return ApiResponse(
         code=CODE_UPDATED,
@@ -124,7 +127,8 @@ async def update_query_category(
 )
 async def delete_query_category(
     entity_id: int,
+    admin: PlatformAdmin = Depends(get_current_admin),
     _: None = Depends(require_permission(PermissionName.QUERY_CATEGORY_WRITE)),
 ) -> ApiResponse[None]:
-    await delete_category(entity_id)
+    await delete_category(entity_id, admin_id=admin.id)
     return ApiResponse(code=CODE_DELETED, message=MSG_DELETED, data=None)

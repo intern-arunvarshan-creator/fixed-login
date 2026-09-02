@@ -1,7 +1,7 @@
 """Query category data access (all SQL)."""
 
 from typing import Any
-
+import uuid
 from sqlalchemy import ColumnElement, func, select
 from sqlmodel import col
 
@@ -11,7 +11,8 @@ from app.models.enums import Status
 from app.models.query_category import QueryCategory
 
 
-async def create_category(category: QueryCategory) -> QueryCategory:
+async def create_category(category: QueryCategory, *, admin_id: uuid.UUID) -> QueryCategory:
+    category.created_by = admin_id
     db = get_session()
     db.add(category)
     await db.commit()
@@ -57,17 +58,19 @@ async def get_category_by_key(key: str) -> QueryCategory | None:
     return result.scalar_one_or_none()
 
 
-async def update_category(category: QueryCategory, data: dict[str, Any]) -> QueryCategory:
+async def update_category(category: QueryCategory, data: dict[str, Any], *, admin_id: uuid.UUID) -> QueryCategory:
     db = get_session()
     for field, value in data.items():
         setattr(category, field, value)
+    category.updated_by = admin_id
     await db.commit()
     await db.refresh(category)
     return category
 
 
-async def delete_category(category: QueryCategory) -> None:
+async def delete_category(category: QueryCategory, *, admin_id: uuid.UUID) -> None:
     """Soft-delete: mark the category inactive rather than removing the row."""
     db = get_session()
     category.status = Status.INACTIVE
+    category.updated_by = admin_id
     await db.commit()

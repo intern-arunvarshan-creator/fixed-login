@@ -2,7 +2,7 @@ from datetime import datetime
 
 from sqlalchemy import Column, DateTime, Enum as SAEnum, Index, Text, func
 from sqlmodel import Field, SQLModel
-
+import uuid
 from app.models.enums import Status, enum_values
 
 
@@ -53,5 +53,5 @@ class QueryCategory(SQLModel, table=True):
         ),
     )
 
-    created_by: int = Field(nullable=False)
-    updated_by: int = Field(nullable=False)
+    created_by: uuid.UUID = Field(foreign_key="platform_admins.id", nullable=False)
+    updated_by: uuid.UUID = Field(foreign_key="platform_admins.id", nullable=False)

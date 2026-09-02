@@ -5,6 +5,7 @@ QueryCategoryKeyExistsError,
 QueryCategoryNotFoundError,
 )
 from app.models.enums import Status
+import uuid
 from app.models.query_category import QueryCategory
 from app.repositories import query_category
 from app.schemas.query_category import QueryCategoryCreate, QueryCategoryUpdate
@@ -22,20 +23,20 @@ exclude_id: int | None = None,
     raise QueryCategoryKeyExistsError()
  
 
-async def create_category(data: QueryCategoryCreate) -> QueryCategory:
+async def create_category(data: QueryCategoryCreate, *, admin_id: uuid.UUID) -> QueryCategory:
     await _ensure_key_available(data.key)
     category = QueryCategory(
     module=data.module,
     type=data.type,
     description=data.description,
-    updated_by=data.updated_by,
-    created_by=data.created_by,
+    updated_by=admin_id,
+    created_by=admin_id,
     key=data.key,
     label=data.label,
     status=data.status,
 )
 
-    category = await query_category.create_category(category)
+    category = await query_category.create_category(category, admin_id=admin_id)
 
     return category
 
@@ -61,7 +62,8 @@ async def get_category(category_id: int) -> QueryCategory:
     return category
 
 
-async def update_category(category_id: int,data: QueryCategoryUpdate,) -> QueryCategory:
+async def update_category(category_id: int,data: QueryCategoryUpdate,*,
+    admin_id: uuid.UUID,) -> QueryCategory:
     category = await get_category(category_id)
 
 
@@ -74,16 +76,11 @@ async def update_category(category_id: int,data: QueryCategoryUpdate,) -> QueryC
                         key=payload["key"],
                                 exclude_id=category_id,
                                     )
-
-    category = await query_category.update_category(
-    category=category,
-    data=payload,
-    )
-
-    return category
+    payload["updated_by"] = admin_id
+    return await query_category.update_category(category=category, data=payload, admin_id=admin_id)
 
 
-async def delete_category(category_id: int) -> None:
+async def delete_category(category_id: int, *, admin_id: uuid.UUID) -> None:
     category = await get_category(category_id)
-    await query_category.delete_category(category)
+    await query_category.delete_category(category, admin_id=admin_id)
 
