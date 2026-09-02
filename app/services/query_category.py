@@ -28,6 +28,8 @@ async def create_category(data: QueryCategoryCreate) -> QueryCategory:
     module=data.module,
     type=data.type,
     description=data.description,
+    updated_by=data.updated_by,
+    created_by=data.created_by,
     key=data.key,
     label=data.label,
     status=data.status,
