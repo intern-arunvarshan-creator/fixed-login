@@ -90,6 +90,7 @@ _SCREEN_RESOURCE_TYPES = {
     "S3": AuditResourceType.ROLE,
     "S4": AuditResourceType.SCREEN,
     "S5": AuditResourceType.QUERY_CATEGORY,
+    "S6": AuditResourceType.ZONE,
 }
 
 

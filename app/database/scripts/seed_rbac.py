@@ -22,6 +22,7 @@ SCREENS = [
     ("S3", "Role Management", 3, True, True),
     ("S4", "Screen Management", 4, True, True),
     ("S5", "Query Category", 5, True, True),
+    ("S6", "Zones Management", 6, True, True),
 ]
 
 

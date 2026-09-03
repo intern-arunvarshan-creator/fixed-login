@@ -41,6 +41,7 @@ class AuditResourceType(StrEnum):
     SCREEN = "screen"
     AUDIT = "audit"
     QUERY_CATEGORY = "query_category"
+    ZONE = "zone"
 
 
 
@@ -61,7 +62,9 @@ class PermissionName(StrEnum):
     SCREENS_WRITE = "S4.W"
     QUERY_CATEGORY_READ = "S5.R"
     QUERY_CATEGORY_WRITE = "S5.W"
-    
+    ZONES_READ = "S6.R"
+    ZONES_WRITE = "S6.W"
+
 
 
 def enum_values(enum_cls: type[Enum]) -> list[str]:
